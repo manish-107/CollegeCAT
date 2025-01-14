@@ -1,5 +1,3 @@
-// Updated DBML with batch_id in TimetableHourFormats
-
 Table Users {
   user_id integer [primary key]
   role varchar [note: 'Role can be HOD, Timetable Coordinator, or Lecturer']
@@ -92,5 +90,21 @@ Table LecturerAvailability {
   day varchar [note: 'E.g., Monday']
   time_location varchar [note: 'E.g.,1,2,3,4,567 1 means 9:00-10:00 2->10.00-11.00' ]
   reason text [note: 'Reason for unavailability, e.g., BE classes, personal, etc.']
+  created_at timestamp
+}
+
+Table Logs {
+  log_id integer [primary key]
+  action varchar [note: 'E.g., Created Batch, Updated Timetable']
+  performed_by integer [ref: > Users.user_id]
+  details text
+  created_at timestamp
+}  
+
+Table Notifications {
+  notification_id integer [primary key]
+  user_id integer [ref: > Users.user_id]
+  message text
+  status varchar [default: 'Unread']
   created_at timestamp
 }
