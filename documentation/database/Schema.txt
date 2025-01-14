@@ -80,7 +80,6 @@ Table Approvals {
   assignment_id integer [ref: > LecturerAssignments.assignment_id]
   hod_status varchar [default: 'Pending']
   lecturer_status varchar [default: 'Pending']
-  comments text
   updated_at timestamp
 }
 
