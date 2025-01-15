@@ -1,0 +1,151 @@
+# Course Selection and Timetable Management System
+
+## Roles:
+
+- **HOD**
+- **Timetable Coordinator**
+- **Lecturers (Users)**
+
+## Requirements
+
+### Create users
+
+```sql
+CREATE TABLE Users (
+  user_id VARCHAR(20) PRIMARY KEY,  -- User ID in the format 'user101'
+  role VARCHAR(50) NOT NULL,  -- Role can be HOD, Timetable Coordinator, or Lecturer
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(100) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  seniority_year VARCHAR(50),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TYPE role_enum AS ENUM ('HOD', 'Timetable Coordinator', 'Lecturer');
+
+create table Users (userId varchar(50) primary key,user_name varchar(50) not null,email varchar(100) unique not null,password varchar(100) not null,role role_enum  not null,seniority_year integer not null,created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+```
+
+```sql
+INSERT INTO Users (user_id, role, name, email, password, seniority_year, created_at)
+VALUES
+  ('user101', 'HOD', 'Dr. John Doe', 'johndoe@institution.edu', 'password123', '1999', '2025-01-15 10:00:00'),
+  ('user102', 'Timetable Coordinator', 'Jane Smith', 'janesmith@institution.edu', 'password456', '1999', '2025-01-15 10:30:00'),
+  ('user103', 'Lecturer', 'Michael Johnson', 'michael.johnson@institution.edu', 'password789', '1999', '2025-01-15 11:00:00'),
+  ('user104', 'Lecturer', 'Emily Davis', 'emily.davis@institution.edu', 'password101', '2000', '2025-01-15 11:30:00');
+```
+
+### 1. Timetable Coordinator: Batch and Subject Management
+
+- **Create Year**:
+
+  - Example: 2023-2025
+
+  ```sql
+  -- SQL to create batch table
+  CREATE TABLE AcademicYears (
+      year_id SERIAL PRIMARY KEY,
+      academic_years VARCHAR(50) NOT NULL
+      created_by
+  );
+
+  -- Insert sample batch data
+  INSERT INTO batches (batch_name) VALUES ('2023-2025 A'), ('2023-2025 B');
+  ```
+
+- **Create Batch**:
+
+  - Example: 2023-2025 batch (A, B)
+
+  ```sql
+  -- SQL to create batch table
+  CREATE TABLE batches (
+      batch_id SERIAL PRIMARY KEY,
+      batch_name VARCHAR(50) NOT NULL
+  );
+
+  -- Insert sample batch data
+  INSERT INTO batches (batch_name) VALUES ('2023-2025 A'), ('2023-2025 B');
+  ```
+
+- **Update Lecturer Details**:
+
+  - Lecturer details like seniority and the year they joined.
+
+- **Update Subject Details**:
+  - Subject details include:
+    - Subject Name
+    - Number of Hours Required
+    - Subject Code
+
+### 2. Lecturer Role: Login and Update Details
+
+- **Login**:
+  - Lecturers must log in to the system.
+- **Update Lecturer Details**:
+  - Lecturers update their details such as:
+    - Seniority
+    - Year they joined the institution
+
+### 3. Timetable Coordinator: Subject Priority Selection Form
+
+- **Create Form to Select Subject Priority**:
+  - Timetable coordinator sends a form to lecturers for subject prioritization.
+- **Lecturer Action**:
+  - Lecturers select 5 subjects based on priority.
+
+### 4. Automation: Subject Assignment Based on Priorities
+
+- **Automated Subject Assignment**:
+  - Based on:
+    - Seniority
+    - Previous year subject selection
+    - Current subject priority selection
+- **Timetable Coordinator**:
+  - Review and edit assigned subjects, if needed.
+  - Send for HOD approval.
+
+### 5. HOD: Review and Approve
+
+- **HOD Action**:
+  - HOD reviews and may update the course selections.
+  - HOD approves the subject assignments.
+
+### 6. Timetable Coordinator: Confirmation
+
+- **Confirmation**:
+  - Timetable coordinator confirms the final assignments and sends to all lecturers.
+- **Lecturer Action**:
+
+  - Lecturers confirm or talk to HOD if changes are required.
+
+- **Completion**:
+  - After final confirmation, subjects are assigned.
+
+### 7. Timetable Creation
+
+- **Timetable Coordinator: Update Timetable Format**:
+
+  - Create and update the timetable format.
+  - Send the timetable format to HOD and lecturers for review.
+
+- **Lecturer Action**:
+
+  - Lecturers review and update their class schedules.
+  - They confirm the days and times of their classes (e.g., BE classes).
+  - Lecturers can only select the number of hours allocated to them.
+
+- **Timetable Coordinator: Generate Timetable**:
+
+  - Based on:
+
+    1. BE Classes
+    2. Lecturer Seniority
+    3. Other Preferences
+
+  - Automatically generate the timetable.
+
+### 8. HOD: Finalization
+
+- **HOD Action**:
+  - HOD can edit and finalize the timetable.
