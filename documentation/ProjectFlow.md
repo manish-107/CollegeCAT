@@ -149,3 +149,23 @@ VALUES
 
 - **HOD Action**:
   - HOD can edit and finalize the timetable.
+ 
+## User Interface Flow:
+
+- **Lecturer Actions**:
+  - Login to system.
+  - Select subject preferences.
+  - View assigned subjects after HOD approval.
+  - View and confirm final timetable.
+
+
+- **Admin (HOD & Timetable Coordinator) Actions**:
+
+  - Add new subjects to the system.
+  - Approve subject preferences submitted by lecturers.
+  - Assign subjects based on preferences and other factors.
+  - Review and edit subject assignments as necessary.
+  - Generate and edit the timetable.
+  - Ensure there are no conflicts or overlaps.
+  - Approve final timetable and send it to lecturers.
+
