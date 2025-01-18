@@ -158,7 +158,6 @@ VALUES
   - View assigned subjects after HOD approval.
   - View and confirm final timetable.
 
-
 - **Admin (HOD & Timetable Coordinator) Actions**:
 
   - Add new subjects to the system.
@@ -168,4 +167,10 @@ VALUES
   - Generate and edit the timetable.
   - Ensure there are no conflicts or overlaps.
   - Approve final timetable and send it to lecturers.
+
+
+
+
+![Flowchart](https://github.com/user-attachments/assets/13291e8a-0073-40f1-a3a9-aef43e97e898)
+![Blank diagram (1)](https://github.com/user-attachments/assets/2cf9e3f9-c96d-45fb-93bd-1d56618c44c9)
 
