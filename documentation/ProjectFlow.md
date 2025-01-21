@@ -149,10 +149,11 @@ VALUES
 
 - **HOD Action**:
   - HOD can edit and finalize the timetable.
- 
+
 ## User Interface Flow:
 
 - **Lecturer Actions**:
+
   - Login to system.
   - Select subject preferences.
   - View assigned subjects after HOD approval.
@@ -168,9 +169,58 @@ VALUES
   - Ensure there are no conflicts or overlaps.
   - Approve final timetable and send it to lecturers.
 
-
-
-
 ![Flowchart](https://github.com/user-attachments/assets/13291e8a-0073-40f1-a3a9-aef43e97e898)
 ![Blank diagram (1)](https://github.com/user-attachments/assets/2cf9e3f9-c96d-45fb-93bd-1d56618c44c9)
 
+## Auth Schema
+
+![schema diagram of auth process](./flowCharts/AuthSchema.png)
+
+### https://sequencediagram.org/
+
+```
+sequenceDiagram
+    participant User
+    participant Browser
+    participant WebApp
+    participant AuthServer
+    participant Redis
+
+participant ChangeMe1
+    User->>Browser: Accesses Web Application
+    Browser->>WebApp: Sends Request
+    WebApp->>AuthServer: Redirects to Authorization Server
+    AuthServer->>User: Prompts for Credentials
+    User->>AuthServer: Enters Credentials
+    AuthServer->>WebApp: Sends Authorization Code
+    WebApp->>AuthServer: Requests Access Token
+    AuthServer->>WebApp: Provides Access Token and Refresh Token
+    WebApp->>Redis: Stores Access Token and Refresh Token
+    WebApp->>Browser: Sets Session Cookie
+    Browser->>WebApp: Sends Subsequent Requests with Session Cookie
+    WebApp->>Redis: Retrieves Access Token
+    WebApp->>Browser: Responds with Requested Resources
+
+    Note over WebApp,AuthServer: Access Token Expired
+    WebApp->>Redis: Retrieves Refresh Token
+    WebApp->>AuthServer: Sends Refresh Token to Authorization Server
+    AuthServer->>WebApp: Provides New Access Token
+    WebApp->>Redis: Updates Access Token in Redis
+    WebApp->>Browser: Responds with Requested Resources
+
+```
+
+## Radis session storage
+
+```json
+
+Key: session:8f9c3a76-df65-44a6-bdc1-7ae32babc123
+Value: {
+  "user_id": 1,
+  "role": "HOD",
+  "access_token": "xyz456",
+  "refresh_token": "abc123",
+  "created_at": "2025-01-20T10:00:00Z"
+}
+
+```
