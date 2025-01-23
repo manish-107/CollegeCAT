@@ -174,38 +174,37 @@ VALUES
 
 ## Auth Schema
 
-![schema diagram of auth process](./flowCharts/AuthSchema.png)
+![sequence diagram of auth process](./flowCharts/AuthSchema.png)
+
+### REF: https://www.youtube.com/watch?v=guvhHTyyAUo
 
 ### https://sequencediagram.org/
 
 ```
 sequenceDiagram
-    participant User
     participant Browser
     participant WebApp
     participant AuthServer
     participant Redis
 
-participant ChangeMe1
-    User->>Browser: Accesses Web Application
-    Browser->>WebApp: Sends Request
+    Browser->>WebApp: Accesses Web Application
     WebApp->>AuthServer: Redirects to Authorization Server
-    AuthServer->>User: Prompts for Credentials
-    User->>AuthServer: Enters Credentials
+    AuthServer->>Browser: Prompts for Credentials
+    Browser->>AuthServer: Submits Credentials
     AuthServer->>WebApp: Sends Authorization Code
     WebApp->>AuthServer: Requests Access Token
     AuthServer->>WebApp: Provides Access Token and Refresh Token
-    WebApp->>Redis: Stores Access Token and Refresh Token
-    WebApp->>Browser: Sets Session Cookie
+    WebApp->>Redis: Stores Session Data (Access Token, Refresh Token, User Details)
+    WebApp->>Browser: Sets Secure HttpOnly Cookie (Session ID)
     Browser->>WebApp: Sends Subsequent Requests with Session Cookie
-    WebApp->>Redis: Retrieves Access Token
+    WebApp->>Redis: Retrieves Access Token using Session ID
     WebApp->>Browser: Responds with Requested Resources
 
     Note over WebApp,AuthServer: Access Token Expired
-    WebApp->>Redis: Retrieves Refresh Token
+    WebApp->>Redis: Retrieves Refresh Token using Session ID
     WebApp->>AuthServer: Sends Refresh Token to Authorization Server
     AuthServer->>WebApp: Provides New Access Token
-    WebApp->>Redis: Updates Access Token in Redis
+    WebApp->>Redis: Updates Access Token in Session Data
     WebApp->>Browser: Responds with Requested Resources
 
 ```
