@@ -209,7 +209,9 @@ sequenceDiagram
 
 ```
 
-## Radis session storage
+## Radis
+
+### session storage
 
 ```json
 
@@ -219,7 +221,22 @@ Value: {
   "role": "HOD",
   "access_token": "xyz456",
   "refresh_token": "abc123",
-  "created_at": "2025-01-20T10:00:00Z"
+  "created_at": "2025-01-20T10:00:00Z",
+  "expires_at": "2025-01-20T11:00:00Z"
 }
 
+```
+
+###
+
+```json
+{
+  "notification_id": "notif-56789",
+  "message": "Your timetable has been updated.",
+  "status": "Unread",
+  "type": "System Update",
+  "created_at": "2025-01-20T10:15:00Z",
+  "userId": "user1001",
+  "expires_at": "2025-01-21T10:15:00Z"
+}
 ```
