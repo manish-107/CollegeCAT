@@ -176,6 +176,12 @@ VALUES
 ## Timetable Coordinator work flow
 ![Blank diagram (2)](https://github.com/user-attachments/assets/b4f85baf-a0a0-4d8e-a5be-d937b4c9d81e)
 
+## Head of Department (HOB) work flow
+![Head of Department (HOD) Flow sequnces ](https://github.com/user-attachments/assets/267736e6-68ac-4d20-acce-5dab4c821bf0)
+
+## Lecturer work flow
+![Blank diagram (3)](https://github.com/user-attachments/assets/b8d68067-8b39-4ceb-8a3b-e39180876b58)
+
 
 ## Auth Schema
 
