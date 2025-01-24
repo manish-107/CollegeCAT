@@ -172,6 +172,11 @@ VALUES
 ![Flowchart](https://github.com/user-attachments/assets/13291e8a-0073-40f1-a3a9-aef43e97e898)
 ![Blank diagram (1)](https://github.com/user-attachments/assets/2cf9e3f9-c96d-45fb-93bd-1d56618c44c9)
 
+
+## Timetable Coordinator work flow
+![Blank diagram (2)](https://github.com/user-attachments/assets/b4f85baf-a0a0-4d8e-a5be-d937b4c9d81e)
+
+
 ## Auth Schema
 
 ![sequence diagram of auth process](./flowCharts/AuthSchema.png)
