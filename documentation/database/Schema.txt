@@ -6,6 +6,7 @@ Table Users {
   oauth_provider varchar [note: 'OAuth provider name, e.g., Google']
   oauth_id varchar [unique, note: 'Unique ID provided by the OAuth provider']
   seniority_year integer 
+  is_active boolean [default: true]
   created_at timestamp
 }
 
@@ -41,6 +42,7 @@ Table LecturerPreferences {
   preference_id integer [primary key]
   lecturer_id integer [ref: > Users.user_id]
   subject_id integer [ref: > Subjects.subject_id]
+  year_id integer [ref: > AcademicYears.year_id, note:'track preferences per academic year']
   priority integer [note: 'Priority ranking from 1 to 5']
   created_at timestamp
 }
@@ -50,8 +52,9 @@ Table LecturerAssignments {
   lecturer_id integer [ref: > Users.user_id]
   subject_id integer [ref: > Subjects.subject_id]
   batch_id integer [ref: > Batches.batch_id]
+  academic_year_id integer [ref: > AcademicYears.year_id]
   assigned_by integer [ref: > Users.user_id]
-  status varchar [default: 'Assigned']
+  status ENUM [default: 'Assigned']
   created_at timestamp
   updated_at timestamp
 }
@@ -68,8 +71,8 @@ Table Timetable {
   timetable_id integer [primary key]
   format_id integer [ref: > TimetableHourFormats.format_id, note: 'Reference to the timetable format']
   batch_id integer [ref: > Batches.batch_id]
-  day varchar [note: 'E.g., Monday']
-  time_location varchar [note: 'E.g., 0,1,2,4 if more than 3 hours, "456"']
+  day ENUM [note: 'E.g., Monday']
+  time_slot varchar [note: 'E.g., 0,1,2,4 if more than 3 hours, "456"']
   subject_id integer [ref: > Subjects.subject_id]
   lecturer_id integer [ref: > Users.user_id]
   created_by integer [ref: > Users.user_id]
@@ -80,8 +83,8 @@ Table Timetable {
 Table Approvals {
   approval_id integer [primary key]
   assignment_id integer [ref: > LecturerAssignments.assignment_id]
-  hod_status varchar [default: 'Pending']
-  lecturer_status varchar [default: 'Pending']
+  hod_status ENUM [default: 'Pending']
+  lecturer_status ENUM [default: 'Pending']
   updated_at timestamp
 }
 
@@ -89,6 +92,7 @@ Table LecturerAvailability {
   availability_id integer [primary key]
   lecturer_id integer [ref: > Users.user_id]
   day varchar [note: 'E.g., Monday']
+  academic_year_id integer [ref: > AcademicYears.year_id]
   time_location varchar [note: 'E.g.,1,2,3,4,567 1 means 9:00-10:00 2->10.00-11.00' ]
   reason text [note: 'Reason for unavailability, e.g., BE classes, personal, etc.']
   created_at timestamp
