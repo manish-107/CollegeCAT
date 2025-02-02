@@ -1,8 +1,8 @@
 Table Users {
   user_id integer [primary key]
-  role varchar [note: 'Role can be HOD, Timetable Coordinator, or Lecturer']
   name varchar
   email varchar [unique, note: 'Email retrieved from OAuth provider']
+  role varchar [note: 'Role can be HOD, Timetable Coordinator, or Lecturer']
   oauth_provider varchar [note: 'OAuth provider name, e.g., Google']
   oauth_id varchar [unique, note: 'Unique ID provided by the OAuth provider']
   seniority_year integer 

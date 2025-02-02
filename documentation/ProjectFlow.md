@@ -11,28 +11,37 @@
 ### Create users
 
 ```sql
-CREATE TABLE Users (
-  user_id VARCHAR(20) PRIMARY KEY,  -- User ID in the format 'user101'
-  role VARCHAR(50) NOT NULL,  -- Role can be HOD, Timetable Coordinator, or Lecturer
-  name VARCHAR(100) NOT NULL,
-  email VARCHAR(100) UNIQUE NOT NULL,
-  password VARCHAR(255) NOT NULL,
-  seniority_year VARCHAR(50),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TYPE role_enum AS ENUM ('HOD', 'Timetable Coordinator', 'Lecturer');
-
-create table Users (userId varchar(50) primary key,user_name varchar(50) not null,email varchar(100) unique not null,password varchar(100) not null,role role_enum  not null,seniority_year integer not null,created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+  DROP TABLE IF EXISTS users;
 ```
 
 ```sql
-INSERT INTO Users (user_id, role, name, email, password, seniority_year, created_at)
+
+CREATE TYPE role_enum AS ENUM ('HOD', 'Timetable Coordinator', 'Lecturer');
+
+CREATE TABLE Users (
+    user_id SERIAL PRIMARY KEY,
+    uname VARCHAR(50) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    role role_enum NOT NULL,
+    oauth_provider VARCHAR(50) NOT NULL,
+    oauth_id VARCHAR(100) UNIQUE NOT NULL,
+    seniority_year INTEGER NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+\d+ users
+
+```
+
+```sql
+-- Inserting users with Google login
+INSERT INTO Users (uname, email, role, oauth_provider, oauth_id, seniority_year, is_active, created_at)
 VALUES
-  ('user101', 'HOD', 'Dr. John Doe', 'johndoe@institution.edu', 'password123', '1999', '2025-01-15 10:00:00'),
-  ('user102', 'Timetable Coordinator', 'Jane Smith', 'janesmith@institution.edu', 'password456', '1999', '2025-01-15 10:30:00'),
-  ('user103', 'Lecturer', 'Michael Johnson', 'michael.johnson@institution.edu', 'password789', '1999', '2025-01-15 11:00:00'),
-  ('user104', 'Lecturer', 'Emily Davis', 'emily.davis@institution.edu', 'password101', '2000', '2025-01-15 11:30:00');
+('John Doe', 'johndoe@gmail.com', 'admin', 'google', '1234567890abc', 1989, TRUE, CURRENT_TIMESTAMP),
+('Jane Smith', 'janesmith@gmail.com', 'lecturer', 'google', '9876543210xyz', 2006, TRUE, CURRENT_TIMESTAMP),
+('Alice Johnson', 'alice.johnson@gmail.com', 'hod', 'google', '5678901234qwe', 2010, FALSE, CURRENT_TIMESTAMP),
+('Bob Williams', 'bob.williams@gmail.com', 'coordinator', 'google', '1357924680zxc', 2007, TRUE, CURRENT_TIMESTAMP);
 ```
 
 ### 1. Timetable Coordinator: Batch and Subject Management
