@@ -32,7 +32,7 @@ Table Subjects {
   year_id integer [ref: > AcademicYears.year_id]
   subject_name varchar
   subject_code varchar [unique]
-  type varchar [note: 'E.g., Elective, Mainsub,Lab']
+  type varchar [note: 'E.g., Elective, core,Lab']
   no_of_hours_required integer
   created_by integer [ref: > Users.user_id]
   created_at timestamp

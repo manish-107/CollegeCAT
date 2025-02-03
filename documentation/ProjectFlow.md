@@ -29,9 +29,11 @@ CREATE TABLE Users (
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+```
 
+```sql
+-- show description
 \d+ users
-
 ```
 
 ```sql
@@ -42,6 +44,62 @@ VALUES
 ('Jane Smith', 'janesmith@gmail.com', 'lecturer', 'google', '9876543210xyz', 2006, TRUE, CURRENT_TIMESTAMP),
 ('Alice Johnson', 'alice.johnson@gmail.com', 'hod', 'google', '5678901234qwe', 2010, FALSE, CURRENT_TIMESTAMP),
 ('Bob Williams', 'bob.williams@gmail.com', 'coordinator', 'google', '1357924680zxc', 2007, TRUE, CURRENT_TIMESTAMP);
+```
+
+```sql
+CREATE TABLE AcademicYears (
+    year_id INTEGER PRIMARY KEY,
+    academic_year VARCHAR(50) NOT NULL,
+    created_by INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES Users(user_id)
+);
+```
+
+```sql
+CREATE TABLE Batches (
+    batch_id INTEGER PRIMARY KEY,
+    year_id INTEGER NOT NULL,
+    section VARCHAR(10) NOT NULL,
+    noOfStudent INTEGER CHECK (noOfStudent >= 0) NOT NULL,
+    created_by INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES Users(user_id),
+    FOREIGN KEY (year_id) REFERENCES AcademicYears(year_id) ON DELETE CASCADE
+);
+```
+
+```sql
+-- Subject enum
+CREATE TYPE subject_enum AS ENUM ('core', 'elective', 'lab');
+
+-- Create Subjects table
+CREATE TABLE Subjects (
+    subject_id SERIAL PRIMARY KEY,
+    year_id INTEGER NOT NULL,
+    subject_name VARCHAR(255) NOT NULL,
+    subject_code VARCHAR(100) UNIQUE NOT NULL,
+    subject_type subject_enum NOT NULL,
+    no_of_hours_required INTEGER NOT NULL CHECK (no_of_hours_required > 0),
+    created_by INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES Users(user_id),
+    FOREIGN KEY (year_id) REFERENCES AcademicYears(year_id)
+);
+```
+
+```sql
+CREATE TABLE LecturerPreferences (
+    preference_id SERIAL PRIMARY KEY,
+    lecturer_id INTEGER NOT NULL,
+    selected_sub_id INTEGER NOT NULL,
+    year_id INTEGER NOT NULL,
+    priority INTEGER NOT NULL CHECK (priority > 0),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (lecturer_id) REFERENCES Users(user_id),
+    FOREIGN KEY (selected_sub_id) REFERENCES Subjects(subject_id),
+    FOREIGN KEY (year_id) REFERENCES AcademicYears(year_id)
+);
 ```
 
 ### 1. Timetable Coordinator: Batch and Subject Management
