@@ -37,16 +37,6 @@ CREATE TABLE Users (
 ```
 
 ```sql
--- Inserting users with Google login
-INSERT INTO Users (uname, email, role, oauth_provider, oauth_id, seniority_year, is_active, created_at)
-VALUES
-('John Doe', 'johndoe@gmail.com', 'admin', 'google', '1234567890abc', 1989, TRUE, CURRENT_TIMESTAMP),
-('Jane Smith', 'janesmith@gmail.com', 'lecturer', 'google', '9876543210xyz', 2006, TRUE, CURRENT_TIMESTAMP),
-('Alice Johnson', 'alice.johnson@gmail.com', 'hod', 'google', '5678901234qwe', 2010, FALSE, CURRENT_TIMESTAMP),
-('Bob Williams', 'bob.williams@gmail.com', 'coordinator', 'google', '1357924680zxc', 2007, TRUE, CURRENT_TIMESTAMP);
-```
-
-```sql
 CREATE TABLE AcademicYears (
     year_id INTEGER PRIMARY KEY,
     academic_year VARCHAR(50) NOT NULL,
@@ -100,6 +90,104 @@ CREATE TABLE LecturerPreferences (
     FOREIGN KEY (selected_sub_id) REFERENCES Subjects(subject_id),
     FOREIGN KEY (year_id) REFERENCES AcademicYears(year_id)
 );
+```
+
+```sql
+CREATE TABLE LecturerAssignments (
+    assignment_id SERIAL PRIMARY KEY,
+    lecturer_id INTEGER NOT NULL,
+    subject_id INTEGER NOT NULL,
+    batch_id INTEGER NOT NULL,
+    academic_year_id INTEGER NOT NULL,
+    assigned_by INTEGER NOT NULL,
+    status VARCHAR(50) DEFAULT 'Assigned',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (lecturer_id) REFERENCES Users(user_id),
+    FOREIGN KEY (subject_id) REFERENCES Subjects(subject_id),
+    FOREIGN KEY (batch_id) REFERENCES Batches(batch_id),
+    FOREIGN KEY (academic_year_id) REFERENCES AcademicYears(year_id),
+    FOREIGN KEY (assigned_by) REFERENCES Users(user_id)
+);
+```
+
+```sql
+CREATE TABLE TimetableHourFormats (
+    format_id SERIAL PRIMARY KEY,
+    batch_id INTEGER NOT NULL,
+    format_data JSONB NOT NULL,
+    created_by INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (batch_id) REFERENCES Batches(batch_id),
+    FOREIGN KEY (created_by) REFERENCES Users(user_id)
+);
+```
+
+```sql
+CREATE TABLE Timetable (
+    timetable_id SERIAL PRIMARY KEY,
+    format_id INTEGER NOT NULL,
+    batch_id INTEGER NOT NULL,
+    day VARCHAR(20) NOT NULL,
+    time_slot VARCHAR(50) NOT NULL,
+    subject_id INTEGER NOT NULL,
+    lecturer_id INTEGER NOT NULL,
+    created_by INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (format_id) REFERENCES TimetableHourFormats(format_id),
+    FOREIGN KEY (batch_id) REFERENCES Batches(batch_id),
+    FOREIGN KEY (subject_id) REFERENCES Subjects(subject_id),
+    FOREIGN KEY (lecturer_id) REFERENCES Users(user_id),
+    FOREIGN KEY (created_by) REFERENCES Users(user_id)
+);
+```
+
+```sql
+CREATE TYPE approval_status_enum AS ENUM ('Pending', 'Approved', 'Rejected');
+
+CREATE TABLE Approvals (
+    approval_id SERIAL PRIMARY KEY,
+    assignment_id INTEGER NOT NULL,
+    hod_status approval_status_enum DEFAULT 'Pending',
+    lecturer_status approval_status_enum DEFAULT 'Pending',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (assignment_id) REFERENCES LecturerAssignments(assignment_id)
+);
+```
+
+```sql
+CREATE TABLE LecturerAvailability (
+    availability_id SERIAL PRIMARY KEY,
+    lecturer_id INTEGER NOT NULL,
+    day VARCHAR(20) NOT NULL,
+    academic_year_id INTEGER NOT NULL,
+    time_location VARCHAR(100) NOT NULL,
+    reason TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (lecturer_id) REFERENCES Users(user_id),
+    FOREIGN KEY (academic_year_id) REFERENCES AcademicYears(year_id)
+);
+```
+
+```sql
+CREATE TABLE Logs (
+    log_id SERIAL PRIMARY KEY,
+    action VARCHAR(255) NOT NULL,
+    performed_by INTEGER NOT NULL,
+    details TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (performed_by) REFERENCES Users(user_id)
+);
+```
+
+```sql
+-- Inserting users with Google login
+INSERT INTO Users (uname, email, role, oauth_provider, oauth_id, seniority_year, is_active, created_at)
+VALUES
+('John Doe', 'johndoe@gmail.com', 'admin', 'google', '1234567890abc', 1989, TRUE, CURRENT_TIMESTAMP),
+('Jane Smith', 'janesmith@gmail.com', 'lecturer', 'google', '9876543210xyz', 2006, TRUE, CURRENT_TIMESTAMP),
+('Alice Johnson', 'alice.johnson@gmail.com', 'hod', 'google', '5678901234qwe', 2010, FALSE, CURRENT_TIMESTAMP),
+('Bob Williams', 'bob.williams@gmail.com', 'coordinator', 'google', '1357924680zxc', 2007, TRUE, CURRENT_TIMESTAMP);
 ```
 
 ### 1. Timetable Coordinator: Batch and Subject Management
