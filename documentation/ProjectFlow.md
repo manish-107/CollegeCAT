@@ -194,35 +194,6 @@ VALUES
 
 - **Create Year**:
 
-  - Example: 2023-2025
-
-  ```sql
-  -- SQL to create batch table
-  CREATE TABLE AcademicYears (
-      year_id SERIAL PRIMARY KEY,
-      academic_years VARCHAR(50) NOT NULL
-      created_by
-  );
-
-  -- Insert sample batch data
-  INSERT INTO batches (batch_name) VALUES ('2023-2025 A'), ('2023-2025 B');
-  ```
-
-- **Create Batch**:
-
-  - Example: 2023-2025 batch (A, B)
-
-  ```sql
-  -- SQL to create batch table
-  CREATE TABLE batches (
-      batch_id SERIAL PRIMARY KEY,
-      batch_name VARCHAR(50) NOT NULL
-  );
-
-  -- Insert sample batch data
-  INSERT INTO batches (batch_name) VALUES ('2023-2025 A'), ('2023-2025 B');
-  ```
-
 - **Update Lecturer Details**:
 
   - Lecturer details like seniority and the year they joined.
@@ -414,42 +385,41 @@ Value: {
 
 📂 project-root/
 │── 📂 public/                  # Static assets (logos, icons, etc.)
-│── 📂 src/                     # Source code
-│   ├── 📂 app/                 # App Router (if using Next.js App Router)
-│   │   ├── 📂 api/             # API routes (backend logic)
-│   │   │   ├── 📂 auth/        # Authentication APIs (login, logout)
-│   │   │   ├── 📂 lecturer/    # Lecturer-related APIs
-│   │   │   ├── 📂 coordinator/ # Timetable coordinator APIs
-│   │   │   ├── 📂 hod/         # HOD-related APIs
-│   │   │   ├── 📂 timetable/   # Timetable-related APIs
-│   │   │   ├── db.ts          # PostgreSQL database connection using `pg`
-│   │   │   ├── middleware.ts   # Middleware for role-based authentication
-│   │   ├── 📂 dashboard/       # Main dashboard (common for all users)
-│   │   │   ├── 📂 lecturer/    # Lecturer dashboard
-│   │   │   ├── 📂 coordinator/ # Timetable coordinator dashboard
-│   │   │   ├── 📂 hod/         # HOD dashboard
-│   │   │   ├── layout.tsx      # Layout component
-│   │   ├── 📂 auth/            # Authentication pages (login, register)
-│   │   ├── 📂 settings/        # User settings pages
-│   │   ├── 📂 timetable/       # Timetable management UI
-│   │   ├── 📂 subjects/        # Subject selection and assignments
-│   │   ├── 📂 approvals/       # HOD approval UI
-│   │   ├── page.tsx            # Home page
-│   │   ├── layout.tsx          # Global layout
-│   │   ├── error.tsx           # Error handling page
-│   ├── 📂 components/          # Reusable UI components
-│   │   ├── 📂 ui/              # UI elements (buttons, modals, etc.)
-│   │   ├── 📂 forms/           # Forms for subject selection, login, etc.
-│   │   ├── 📂 table/           # Custom tables for displaying data
-│   │   ├── Sidebar.tsx         # Sidebar navigation
-│   │   ├── Header.tsx          # Header component
-│   ├── 📂 hooks/               # Custom React hooks
-│   ├── 📂 lib/                 # Utility functions (API calls, date formatting, etc.)
-│   ├── 📂 services/            # Services for handling business logic
-│   ├── 📂 store/               # Global state management (Zustand/Redux)
-│   ├── 📂 styles/              # Global styles (Tailwind CSS or SCSS)
-│   ├── 📂 types/               # TypeScript types
-│   ├── 📂 config/              # Config files (env, constants, etc.)
+│── 📂 app/                     # Next.js App Router
+│   ├── 📂 api/                 # API routes (backend logic)
+│   │   ├── 📂 auth/            # Authentication APIs (login, logout)
+│   │   ├── 📂 lecturer/        # Lecturer-related APIs
+│   │   ├── 📂 coordinator/     # Timetable coordinator APIs
+│   │   ├── 📂 hod/             # HOD-related APIs
+│   │   ├── 📂 timetable/       # Timetable-related APIs
+│   │   ├── db.ts               # PostgreSQL database connection using `pg`
+│   │   ├── middleware.ts       # Middleware for role-based authentication
+│   ├── 📂 dashboard/           # Main dashboard (common for all users)
+│   │   ├── 📂 lecturer/        # Lecturer dashboard
+│   │   ├── 📂 coordinator/     # Timetable coordinator dashboard
+│   │   ├── 📂 hod/             # HOD dashboard
+│   │   ├── layout.tsx          # Dashboard layout
+│   ├── 📂 auth/                # Authentication pages (login, register)
+│   ├── 📂 settings/            # User settings pages
+│   ├── 📂 timetable/           # Timetable management UI
+│   ├── 📂 subjects/            # Subject selection and assignments
+│   ├── 📂 approvals/           # HOD approval UI
+│   ├── page.tsx                # Home page
+│   ├── layout.tsx              # Global layout
+│   ├── error.tsx               # Error handling page
+│── 📂 components/              # Reusable UI components
+│   ├── 📂 ui/                  # UI elements (buttons, modals, etc.)
+│   ├── 📂 forms/               # Forms for subject selection, login, etc.
+│   ├── 📂 table/               # Custom tables for displaying data
+│   ├── Sidebar.tsx             # Sidebar navigation
+│   ├── Header.tsx              # Header component
+│── 📂 hooks/                   # Custom React hooks
+│── 📂 lib/                     # Utility functions (API calls, date formatting, etc.)
+│── 📂 services/                # Services for handling business logic
+│── 📂 store/                   # Global state management (Zustand/Redux)
+│── 📂 styles/                  # Global styles (Tailwind CSS or SCSS)
+│── 📂 types/                   # TypeScript types
+│── 📂 config/                  # Config files (env, constants, etc.)
 │── 📂 database/                # Database setup scripts
 │   ├── init.sql                # SQL scripts to initialize PostgreSQL tables
 │   ├── seed.sql                # Sample data for testing
@@ -462,7 +432,6 @@ Value: {
 │── package.json                # Dependencies & scripts
 │── tsconfig.json               # TypeScript configuration
 │── README.md                   # Project documentation
-
 
 
 ```

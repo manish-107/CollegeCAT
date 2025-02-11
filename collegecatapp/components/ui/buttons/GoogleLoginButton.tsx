@@ -10,7 +10,7 @@ const GoogleLoginButton = () => {
   return (
     <div
       onClick={justFunction}
-      className="flex gap-32 bg-[#403f3f6d] p-4 rounded-lg border border-[#aaaaaa4a] hover:bg-[#63616159] hover:cursor-pointer"
+      className="flex gap-32 bg-[#403f3f6d] p-4 rounded-xl border border-[#aaaaaa4a] hover:bg-[#63616159] hover:cursor-pointer"
     >
       <div className="flex gap-4">
         <GoogleIcon />
