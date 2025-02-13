@@ -1,10 +1,12 @@
 "use client";
 
+import { redirect } from "next/navigation";
 import GoogleIcon from "../icons/GoogleIcon";
 
 const GoogleLoginButton = () => {
   const justFunction = () => {
     console.log("clicked");
+    redirect("/dashboard/updatedetails");
   };
 
   return (
