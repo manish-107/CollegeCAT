@@ -12,12 +12,16 @@ export async function POST(req: Request) {
       );
     }
 
-    console.log("Recieved : " + name + " " + email);
-
-    return NextResponse.json(
-      { msg: `hello ${name} and email ${email}` },
-      { status: 200 }
+    const insertResult = await pool.query(
+      `INSERT INTO USERS(uname,email) VALUES($1,$2)`,
+      [name, email]
     );
+
+    if (insertResult.rowCount === 0) {
+      return NextResponse.json({ error: "Unable to insert" }, { status: 400 });
+    }
+
+    return NextResponse.json({ msg: `Inserted successfully` }, { status: 200 });
   } catch (error) {
     console.log(error);
     return NextResponse.json(
