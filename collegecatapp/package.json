@@ -5,11 +5,12 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "npm run docker:up && npm run dev",
     "lint": "next lint",
     "db:create": "docker exec -i postgres_container_pro psql -U demouser -d demodb < ./database/init.sql",
     "db:seed": "docker exec -i postgres_container_pro psql -U demouser -d demodb < ./database/seed.sql",
-    "db:reset": "npm run db:create && npm run db:seed"
+    "db:reset": "npm run db:create && npm run db:seed",
+    "docker:up": "cd docker && docker compose up -d"
   },
   "dependencies": {
     "next": "15.1.6",

@@ -384,54 +384,97 @@ Value: {
 ```json
 
 📂 project-root/
-│── 📂 public/                  # Static assets (logos, icons, etc.)
-│── 📂 app/                     # Next.js App Router
-│   ├── 📂 api/                 # API routes (backend logic)
-│   │   ├── 📂 auth/            # Authentication APIs (login, logout)
-│   │   ├── 📂 lecturer/        # Lecturer-related APIs
-│   │   ├── 📂 coordinator/     # Timetable coordinator APIs
-│   │   ├── 📂 hod/             # HOD-related APIs
-│   │   ├── 📂 timetable/       # Timetable-related APIs
-│   │   ├── db.ts               # PostgreSQL database connection using `pg`
-│   │   ├── middleware.ts       # Middleware for role-based authentication
-│   ├── 📂 dashboard/           # Main dashboard (common for all users)
-│   │   ├── 📂 lecturer/        # Lecturer dashboard
-│   │   ├── 📂 coordinator/     # Timetable coordinator dashboard
-│   │   ├── 📂 hod/             # HOD dashboard
-│   │   ├── layout.tsx          # Dashboard layout
-│   ├── 📂 auth/                # Authentication pages (login, register)
-│   ├── 📂 settings/            # User settings pages
-│   ├── 📂 timetable/           # Timetable management UI
-│   ├── 📂 subjects/            # Subject selection and assignments
-│   ├── 📂 approvals/           # HOD approval UI
-│   ├── page.tsx                # Home page
-│   ├── layout.tsx              # Global layout
-│   ├── error.tsx               # Error handling page
-│── 📂 components/              # Reusable UI components
-│   ├── 📂 ui/                  # UI elements (buttons, modals, etc.)
-│   ├── 📂 forms/               # Forms for subject selection, login, etc.
-│   ├── 📂 table/               # Custom tables for displaying data
-│   ├── Sidebar.tsx             # Sidebar navigation
-│   ├── Header.tsx              # Header component
-│── 📂 hooks/                   # Custom React hooks
-│── 📂 lib/                     # Utility functions (API calls, date formatting, etc.)
-│── 📂 services/                # Services for handling business logic
-│── 📂 store/                   # Global state management (Zustand/Redux)
-│── 📂 styles/                  # Global styles (Tailwind CSS or SCSS)
-│── 📂 types/                   # TypeScript types
-│── 📂 config/                  # Config files (env, constants, etc.)
-│── 📂 database/                # Database setup scripts
-│   ├── init.sql                # SQL scripts to initialize PostgreSQL tables
-│   ├── seed.sql                # Sample data for testing
-│── 📂 docker/                  # Docker-related files
-│   ├── Dockerfile              # Docker configuration for Next.js
-│   ├── docker-compose.yml      # PostgreSQL + Next.js setup
-│── 📂 tests/                   # Test cases (unit & integration tests)
-│── .env                        # Environment variables
-│── next.config.js              # Next.js configuration
-│── package.json                # Dependencies & scripts
-│── tsconfig.json               # TypeScript configuration
-│── README.md                   # Project documentation
+│── 📂 public/                   # Static assets (logos, icons, etc.)
+│── 📂 app/                      # Next.js App Router (pages & API routes)
+│   ├── 📂 api/                  # API routes (backend logic)
+│   │   ├── 📂 auth/             # Authentication APIs (Google OAuth)
+│   │   │   ├── login/route.ts   # Google OAuth login route
+│   │   │   ├── callback/route.ts # Google OAuth callback route
+│   │   │   ├── session/route.ts  # Fetch user session data
+│   │   │   ├── refresh/route.ts  # Refresh expired access tokens
+│   │   │   ├── logout/route.ts   # Logout API
+│   │   ├── 📂 lecturer/         # Lecturer APIs
+│   │   │   ├── update/route.ts  # Update lecturer details
+│   │   │   ├── subjects/route.ts # Get assigned subjects
+│   │   │   ├── preferences/route.ts # Submit subject preferences
+│   │   ├── 📂 coordinator/      # Timetable coordinator APIs
+│   │   │   ├── batches/route.ts # Manage batches
+│   │   │   ├── subjects/route.ts # Manage subjects
+│   │   │   ├── assign/route.ts # Assign subjects automatically
+│   │   │   ├── confirm/route.ts # Confirm subject assignments
+│   │   ├── 📂 hod/              # HOD APIs
+│   │   │   ├── review/route.ts  # Review assignments
+│   │   │   ├── approve/route.ts # Approve assignments & timetable
+│   │   ├── 📂 timetable/        # Timetable APIs
+│   │   │   ├── generate/route.ts # Generate timetable
+│   │   │   ├── update/route.ts # Update timetable
+│   │   │   ├── finalize/route.ts # Finalize timetable
+│   │   ├── 📂 common/           # Shared API utilities
+│   │   │   ├── validate/route.ts # Validate form inputs
+│   │   │   ├── notifications/route.ts # Send email notifications
+│   │   ├── db.ts                # PostgreSQL database connection (no ORM)
+│   │   ├── middleware.ts        # Middleware for role-based authentication
+│   ├── 📂 dashboard/            # Dashboard (common for all users)
+│   │   ├── 📂 lecturer/         # Lecturer dashboard
+│   │   ├── 📂 coordinator/      # Timetable coordinator dashboard
+│   │   ├── 📂 hod/              # HOD dashboard
+│   │   ├── _layout.tsx          # Dashboard layout
+│   │   ├── page.tsx             # Dashboard home page
+│   ├── 📂 auth/                 # Authentication pages (Google OAuth)
+│   │   ├── login/page.tsx       # Login page
+│   │   ├── register/page.tsx    # Register page (if needed)
+│   ├── 📂 settings/             # User settings pages
+│   ├── 📂 timetable/            # Timetable management UI
+│   │   ├── review/page.tsx      # Review timetable
+│   │   ├── edit/page.tsx        # Edit timetable
+│   │   ├── page.tsx             # Timetable display
+│   ├── 📂 subjects/             # Subject selection & assignments
+│   ├── 📂 approvals/            # HOD approval UI
+│   ├── page.tsx                 # Home page
+│   ├── _layout.tsx              # Global layout
+│   ├── error.tsx                # Error handling page
+│── 📂 components/               # Reusable UI components
+│   ├── 📂 ui/                   # UI elements (buttons, modals, etc.)
+│   ├── 📂 forms/                # Forms for subject selection, login, etc.
+│   ├── 📂 table/                # Custom tables for displaying data
+│   ├── Sidebar.tsx              # Sidebar navigation
+│   ├── Header.tsx               # Header component
+│── 📂 hooks/                    # Custom React hooks
+│── 📂 lib/                      # Utility functions
+│   ├── auth.ts                  # Google OAuth token handling
+│   ├── redis.ts                 # Redis session management
+│   ├── cookies.ts               # Cookie management
+│   ├── validation.ts            # Input validation helper functions
+│   ├── logger.ts                # Logging utility
+│── 📂 middleware/               # Middleware for authentication & roles
+│   ├── auth-middleware.ts       # Protects routes based on roles
+│   ├── rate-limit.ts            # Rate limiting for API security
+│── 📂 store/                    # Global state management (Zustand/Redux)
+│── 📂 types/                    # TypeScript types
+│   ├── auth.d.ts                # OAuth types
+│   ├── db.d.ts                  # PostgreSQL table types
+│   ├── timetable.d.ts           # Timetable-related types
+│── 📂 config/                    # Configuration files
+│   ├── env.ts                    # Environment variable loader
+│   ├── oauth.ts                  # Google OAuth settings
+│   ├── db.ts                      # PostgreSQL connection config
+│── 📂 database/                   # PostgreSQL setup
+│   ├── init.sql                   # SQL schema setup
+│   ├── seed.sql                   # Sample test data
+│   ├── migrations/                 # Database migration scripts
+│── 📂 docker/                      # Docker setup
+│   ├── Dockerfile                  # Next.js container
+│   ├── docker-compose.yml           # PostgreSQL + Redis + Next.js
+│── 📂 tests/                        # Unit & integration tests
+│   ├── 📂 api/                      # API test cases
+│   ├── 📂 ui/                       # UI component tests
+│   ├── setup.ts                     # Jest/Playwright setup
+│── .env                             # Environment variables
+│── next.config.js                   # Next.js configuration
+│── package.json                      # Dependencies
+│── tsconfig.json                      # TypeScript config
+│── README.md                         # Documentation
+
 
 
 ```
