@@ -1,10 +1,8 @@
 from fastapi import FastAPI
-import uvicorn
 from app.routes.authRoutes import authRoute
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Course Selection and Timetable System")
-
 
 app.add_middleware(
     CORSMiddleware,
