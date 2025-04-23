@@ -1,1 +1,12 @@
+
+# Byte-compiled / cached files
+__pycache__/
+*.py[cod]
+*.swp
+*.swo
+*.bak
+*.log
+app/__pycache__/ 
+
 .env
+/backend.egg-info

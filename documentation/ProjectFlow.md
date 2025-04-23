@@ -386,34 +386,6 @@ Value: {
 📂 project-root/
 │── 📂 public/                   # Static assets (logos, icons, etc.)
 │── 📂 app/                      # Next.js App Router (pages & API routes)
-│   ├── 📂 api/                  # API routes (backend logic)
-│   │   ├── 📂 auth/             # Authentication APIs (Google OAuth)
-│   │   │   ├── login/route.ts   # Google OAuth login route
-│   │   │   ├── callback/route.ts # Google OAuth callback route
-│   │   │   ├── session/route.ts  # Fetch user session data
-│   │   │   ├── refresh/route.ts  # Refresh expired access tokens
-│   │   │   ├── logout/route.ts   # Logout API
-│   │   ├── 📂 lecturer/         # Lecturer APIs
-│   │   │   ├── update/route.ts  # Update lecturer details
-│   │   │   ├── subjects/route.ts # Get assigned subjects
-│   │   │   ├── preferences/route.ts # Submit subject preferences
-│   │   ├── 📂 coordinator/      # Timetable coordinator APIs
-│   │   │   ├── batches/route.ts # Manage batches
-│   │   │   ├── subjects/route.ts # Manage subjects
-│   │   │   ├── assign/route.ts # Assign subjects automatically
-│   │   │   ├── confirm/route.ts # Confirm subject assignments
-│   │   ├── 📂 hod/              # HOD APIs
-│   │   │   ├── review/route.ts  # Review assignments
-│   │   │   ├── approve/route.ts # Approve assignments & timetable
-│   │   ├── 📂 timetable/        # Timetable APIs
-│   │   │   ├── generate/route.ts # Generate timetable
-│   │   │   ├── update/route.ts # Update timetable
-│   │   │   ├── finalize/route.ts # Finalize timetable
-│   │   ├── 📂 common/           # Shared API utilities
-│   │   │   ├── validate/route.ts # Validate form inputs
-│   │   │   ├── notifications/route.ts # Send email notifications
-│   │   ├── db.ts                # PostgreSQL database connection (no ORM)
-│   │   ├── middleware.ts        # Middleware for role-based authentication
 │   ├── 📂 dashboard/            # Dashboard (common for all users)
 │   │   ├── 📂 lecturer/         # Lecturer dashboard
 │   │   ├── 📂 coordinator/      # Timetable coordinator dashboard
