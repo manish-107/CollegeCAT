@@ -362,73 +362,76 @@ Value: {
 }
 ```
 
-```json
 
-/app
-│
-├── layout.tsx                 # Root layout (e.g., theme, ModeToggle)
-├── page.tsx                   # Landing page (Login with Google)
-│
-├── signup/
-│   └── page.tsx               # Shown if user is new, capture extra details
-│
-├── dashboard/                 # Authenticated area, shared by all roles
-│   ├── layout.tsx            # Dashboard layout with sidebar + header
-│   ├── page.tsx              # Dashboard overview (lecturer info, stats)
-│   │
-│   ├── components/           # UI Components used only in dashboard
-│   │   ├── Sidebar.tsx
-│   │   ├── Header.tsx
-│   │   ├── StepLockIndicator.tsx
-│   │   └── YearBatchStats.tsx
-│   │
-│   ├── steps/                # Pages for each step (access-controlled)
-│   │   ├── 1-create-year/
-│   │   │   └── page.tsx      # Step 1: Create year, batch, subject
-│   │   ├── 2-manage-subjects/
-│   │   │   └── page.tsx      # Step 2: Subject Management
-│   │   ├── 3-priority-form/
-│   │   │   └── page.tsx      # Step 3: Create subject priority form
-│   │   ├── 4-priority-selection/
-│   │   │   └── page.tsx      # Step 4: Lecturer selects priorities
-│   │   ├── 5-auto-assignment/
-│   │   │   └── page.tsx      # Step 5: Auto assign & notify HOD
-│   │   ├── 6-hod-review/
-│   │   │   └── page.tsx      # Step 6: HOD review subject assignments
-│   │   ├── 7-finalize-subjects/
-│   │   │   └── page.tsx
-│   │   ├── 8-create-timetable/
-│   │   │   └── page.tsx
-│   │   ├── 9-format-review/
-│   │   │   └── page.tsx
-│   │   ├── 10-autogenerate-timetable/
-│   │   │   └── page.tsx
-│   │   ├── 11-hod-edit-timetable/
-│   │   │   └── page.tsx
-│   │   └── 12-finalize-timetable/
-│   │       └── page.tsx
-│
-├── components/               # Global shared components
-│   ├── ui/                   # Tailwind-styled components (Input, Button, etc.)
-│   ├── icons/
-│   ├── GoogleButton.tsx
-│   └── ModeToggle.tsx
-│
-├── lib/
-│   ├── auth.ts               # Check login, handle redirection
-│   ├── api.ts                # API handler (fetch wrapper)
-│   └── roles.ts              # Helpers for role-based access logic
-│
-├── hooks/
-│   └── useUser.ts            # Get current user info, role, auth status
-│
-├── middleware.ts             # Auth middleware (optional)
-└── types/
-    └── index.ts              # Types for User, Role, Subject, etc.
+---
 
+## 📂 Frontend Folder Structure
+
+```bash
+/app  
+├── 📄 layout.tsx                # Root layout (ThemeProvider, ModeToggle)  
+├── 📄 page.tsx                  # Landing page (Login with Google)  
+  
+├── 📁 signup/  
+│   └── 📄 page.tsx              # Signup form for new users  
+  
+├── 📁 dashboard/                # Authenticated area, shared by all roles  
+│   ├── 📄 layout.tsx            # Dashboard layout (sidebar, header)  
+│   ├── 📄 page.tsx              # Overview (lecturer info, stats)  
+│   │  
+│   ├── 📁 components/           # Dashboard-specific UI components  
+│   │   ├── 📄 Sidebar.tsx  
+│   │   ├── 📄 Header.tsx  
+│   │   ├── 📄 StepLockIndicator.tsx  
+│   │   └── 📄 YearBatchStats.tsx  
+│   │  
+│   ├── 📁 steps/                # Pages for each workflow step  
+│   │   ├── 📁 1-create-year/  
+│   │   │   └── 📄 page.tsx      # Step 1: Create year, batch, subjects  
+│   │   ├── 📁 2-manage-subjects/  
+│   │   │   └── 📄 page.tsx      # Step 2: Subject management  
+│   │   ├── 📁 3-priority-form/  
+│   │   │   └── 📄 page.tsx      # Step 3: Create priority form  
+│   │   ├── 📁 4-priority-selection/  
+│   │   │   └── 📄 page.tsx      # Step 4: Lecturer selects priorities  
+│   │   ├── 📁 5-auto-assignment/  
+│   │   │   └── 📄 page.tsx      # Step 5: Auto-assign & notify HOD  
+│   │   ├── 📁 6-hod-review/  
+│   │   │   └── 📄 page.tsx      # Step 6: HOD reviews assignments  
+│   │   ├── 📁 7-finalize-subjects/  
+│   │   │   └── 📄 page.tsx      # Step 7: Finalize subject allocation  
+│   │   ├── 📁 8-create-timetable/  
+│   │   │   └── 📄 page.tsx      # Step 8: Create timetable format  
+│   │   ├── 📁 9-format-review/  
+│   │   │   └── 📄 page.tsx      # Step 9: Review & finalize format  
+│   │   ├── 📁 10-autogenerate-timetable/  
+│   │   │   └── 📄 page.tsx      # Step 10: Auto-generate timetable  
+│   │   ├── 📁 11-hod-edit-timetable/  
+│   │   │   └── 📄 page.tsx      # Step 11: HOD edits timetable  
+│   │   └── 📁 12-finalize-timetable/  
+│   │       └── 📄 page.tsx      # Step 12: Final confirmation  
+│  
+├── 📁 components/              # Global shared components  
+│   ├── 📁 ui/                  # Tailwind-styled primitives (Input, Button)  
+│   ├── 📁 icons/               # SVG/JSX icon components  
+│   ├── 📄 GoogleButton.tsx  
+│   └── 📄 ModeToggle.tsx  
+│  
+├── 📁 lib/                     # Helper utilities  
+│   ├── 📄 auth.ts              # Authentication checks & redirects  
+│   ├── 📄 api.ts               # API fetch wrappers  
+│   └── 📄 roles.ts             # Role-based access helpers  
+│  
+├── 📁 hooks/                   # Custom React hooks  
+│   └── 📄 useUser.ts           # Fetch current user & role  
+│  
+├── 📄 middleware.ts            # Optional auth/redirect middleware  
+└── 📁 types/                   # TypeScript definitions  
+    └── 📄 index.ts             # Interfaces: User, Role, Subject, etc.  
 
 
 ```
+
 
 # Timetable Management System - Project Workflow
 

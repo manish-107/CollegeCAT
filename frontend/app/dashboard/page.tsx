@@ -6,9 +6,9 @@ import HeaderDetails from '@/components/dashboard/HeaderDetails';
 
 export default function DashboardPage() {
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-gray-900 text-white">
+    <div className="relative bg-gray-900 w-screen h-screen overflow-hidden text-white">
       <Background />
-      <div className="relative z-10 flex h-full">
+      <div className="z-10 relative flex h-full">
         <Sidebar />
         <div className="flex-1 p-6 overflow-auto">
           <Header/>
