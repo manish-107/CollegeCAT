@@ -17,7 +17,7 @@ export default function Home() {
         <p className="text-zinc-400 ">
           Update your details, prioritize subjects, <br/>  view your timetable seamlessly.
         </p>
-        <GoogleLoginButton handleLogin={handleLogin} />
+        <GoogleLoginButton />
       </div>
     </main>
   );
