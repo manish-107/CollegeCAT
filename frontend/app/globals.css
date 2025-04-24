@@ -120,3 +120,103 @@
     @apply bg-background text-foreground;
   }
 }
+
+
+@layer base {
+  :root {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+
+    --card: 224 47% 8%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 224 47% 8%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 100% 50%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 217 32% 17%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 32% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 210 100% 50%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 32% 17%;
+    --input: 217 32% 17%;
+    --ring: 213 27% 84%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 224 47% 6%;
+    --sidebar-foreground: 213 31% 91%;
+    --sidebar-primary: 210 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 4% 16%;
+    --sidebar-accent-foreground: 213 31% 91%;
+    --sidebar-border: 240 4% 16%;
+    --sidebar-ring: 217 91% 60%;
+
+    --ui-design: 168 100% 32%;
+    --ux-research: 344 84% 60%;
+    --marketing: 134 75% 38%;
+    --web-design: 42 100% 50%;
+    --graphic-design: 34 100% 50%;
+    --testing: 315 100% 60%;
+    --copywriting: 134 75% 38%;
+    --3d-design: 190 90% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-[hsl(var(--border))];
+  }
+  
+
+  body {
+    @apply bg-background text-foreground;
+  }
+  
+  html, body {
+    @apply h-full overflow-hidden;
+  }
+
+  .tag-ui-design {
+    @apply bg-[hsl(var(--ui-design)/0.2)] text-[hsl(var(--ui-design))] rounded-md px-2 py-0.5 text-xs font-medium;
+  }
+  
+  .tag-ux-research {
+    @apply bg-[hsl(var(--ux-research)/0.2)] text-[hsl(var(--ux-research))] rounded-md px-2 py-0.5 text-xs font-medium;
+  }
+  
+  .tag-marketing {
+    @apply bg-[hsl(var(--marketing)/0.2)] text-[hsl(var(--marketing))] rounded-md px-2 py-0.5 text-xs font-medium;
+  }
+  
+  .tag-web-design {
+    @apply bg-[hsl(var(--web-design)/0.2)] text-[hsl(var(--web-design))] rounded-md px-2 py-0.5 text-xs font-medium;
+  }
+  
+  .tag-graphic-design {
+    @apply bg-[hsl(var(--graphic-design)/0.2)] text-[hsl(var(--graphic-design))] rounded-md px-2 py-0.5 text-xs font-medium;
+  }
+  
+  .tag-testing {
+    @apply bg-[hsl(var(--testing)/0.2)] text-[hsl(var(--testing))] rounded-md px-2 py-0.5 text-xs font-medium;
+  }
+  
+  .tag-copywriting {
+    @apply bg-[hsl(var(--copywriting)/0.2)] text-[hsl(var(--copywriting))] rounded-md px-2 py-0.5 text-xs font-medium;
+  }
+  
+  .tag-3d-design {
+    @apply bg-[hsl(var(--3d-design)/0.2)] text-[hsl(var(--3d-design))] rounded-md px-2 py-0.5 text-xs font-medium;
+  }
+}
