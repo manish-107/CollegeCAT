@@ -23,13 +23,13 @@ const GoogleLoginButton = () => {
   return (
     <div
       onClick={handleLogin}
-      className="flex items-center justify-between gap-6 bg-[#2e2e2e] px-6 py-4 rounded-xl border border-[#aaaaaa4a] hover:bg-[#444444] transition duration-200 cursor-pointer w-full max-w-md mx-auto shadow-lg"
+      className="flex justify-between items-center gap-6 bg-gray-100 hover:bg-gray-200 dark:bg-[#2e2e2e] dark:hover:bg-[#444444] shadow-lg mx-auto px-6 py-4 border border-gray-300 dark:border-[#aaaaaa4a] rounded-xl w-full max-w-md text-black dark:text-white transition duration-200 cursor-pointer"
     >
       <div className="flex items-center gap-4">
         <GoogleIcon />
-        <span className="text-lg font-medium text-white">Signin or Signup with Google</span>
+        <span className="font-medium text-lg">Signin or Signup with Google</span>
       </div>
-      <span className="text-[#afadad] text-xl">{`→`}</span>
+      <span className="text-gray-600 dark:text-[#afadad] text-xl">{`→`}</span>
     </div>
   );
 };

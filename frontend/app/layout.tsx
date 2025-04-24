@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ThemeProvider } from "@/components/theme-provider"
+import { ThemeProvider } from "@/components/theme-provider";
+import { ModeToggle } from "@/components/custom/ModeToggle";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -25,16 +26,24 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-       <body>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            {children}
-          </ThemeProvider>
-        </body>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-white dark:bg-black text-black dark:text-white`}
+      >
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {/* Global dark/light toggle */}
+          <div className="top-4 right-4 z-50 fixed">
+            <ModeToggle />
+          </div>
+
+          {/* Page content */}
+          <main>{children}</main>
+        </ThemeProvider>
+      </body>
     </html>
   );
 }
