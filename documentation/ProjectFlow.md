@@ -190,13 +190,13 @@ VALUES
 ('Bob Williams', 'bob.williams@gmail.com', 'coordinator', 'google', '1357924680zxc', 2007, TRUE, CURRENT_TIMESTAMP);
 ```
 
+lecturers signup and enter details
+
+Normal dashboard representing year if subject are created batch then showing nessaserry stats this dashboard comman for all
 ### 1. Timetable Coordinator: Batch and Subject Management
 
 - **Create Year**:
-
-- **Update Lecturer Details**:
-
-  - Lecturer details like seniority and the year they joined.
+    create year and batch details and subjects details for time table
 
 - **Update Subject Details**:
   - Subject details include:
@@ -208,10 +208,8 @@ VALUES
 
 - **Login**:
   - Lecturers must log in to the system.
-- **Update Lecturer Details**:
-  - Lecturers update their details such as:
-    - Seniority
-    - Year they joined the institution
+    they can update there details
+
 
 ### 3. Timetable Coordinator: Subject Priority Selection Form
 
@@ -229,21 +227,12 @@ VALUES
     - Current subject priority selection
 - **Timetable Coordinator**:
   - Review and edit assigned subjects, if needed.
-  - Send for HOD approval.
 
 ### 5. HOD: Review and Approve
 
 - **HOD Action**:
   - HOD reviews and may update the course selections.
   - HOD approves the subject assignments.
-
-### 6. Timetable Coordinator: Confirmation
-
-- **Confirmation**:
-  - Timetable coordinator confirms the final assignments and sends to all lecturers.
-- **Lecturer Action**:
-
-  - Lecturers confirm or talk to HOD if changes are required.
 
 - **Completion**:
   - After final confirmation, subjects are assigned.
@@ -255,17 +244,9 @@ VALUES
   - Create and update the timetable format.
   - Send the timetable format to HOD and lecturers for review.
 
-- **Lecturer Action**:
-
-  - Lecturers review and update their class schedules.
-  - They confirm the days and times of their classes (e.g., BE classes).
-  - Lecturers can only select the number of hours allocated to them.
-
 - **Timetable Coordinator: Generate Timetable**:
 
   - Based on:
-
-    1. BE Classes
     2. Lecturer Seniority
     3. Other Preferences
 
@@ -383,82 +364,162 @@ Value: {
 
 ```json
 
-📂 project-root/
-│── 📂 public/                   # Static assets (logos, icons, etc.)
-│── 📂 app/                      # Next.js App Router (pages & API routes)
-│   ├── 📂 dashboard/            # Dashboard (common for all users)
-│   │   ├── 📂 lecturer/         # Lecturer dashboard
-│   │   ├── 📂 coordinator/      # Timetable coordinator dashboard
-│   │   ├── 📂 hod/              # HOD dashboard
-│   │   ├── _layout.tsx          # Dashboard layout
-│   │   ├── page.tsx             # Dashboard home page
-│   ├── 📂 auth/                 # Authentication pages (Google OAuth)
-│   │   ├── login/page.tsx       # Login page
-│   │   ├── register/page.tsx    # Register page (if needed)
-│   ├── 📂 settings/             # User settings pages
-│   ├── 📂 timetable/            # Timetable management UI
-│   │   ├── review/page.tsx      # Review timetable
-│   │   ├── edit/page.tsx        # Edit timetable
-│   │   ├── page.tsx             # Timetable display
-│   ├── 📂 subjects/             # Subject selection & assignments
-│   ├── 📂 approvals/            # HOD approval UI
-│   ├── page.tsx                 # Home page
-│   ├── _layout.tsx              # Global layout
-│   ├── error.tsx                # Error handling page
-│── 📂 components/               # Reusable UI components
-│   ├── 📂 ui/                   # UI elements (buttons, modals, etc.)
-│   ├── 📂 forms/                # Forms for subject selection, login, etc.
-│   ├── 📂 table/                # Custom tables for displaying data
-│   ├── Sidebar.tsx              # Sidebar navigation
-│   ├── Header.tsx               # Header component
-│── 📂 hooks/                    # Custom React hooks
-│── 📂 lib/                      # Utility functions
-│   ├── auth.ts                  # Google OAuth token handling
-│   ├── redis.ts                 # Redis session management
-│   ├── cookies.ts               # Cookie management
-│   ├── validation.ts            # Input validation helper functions
-│   ├── logger.ts                # Logging utility
-│── 📂 middleware/               # Middleware for authentication & roles
-│   ├── auth-middleware.ts       # Protects routes based on roles
-│   ├── rate-limit.ts            # Rate limiting for API security
-│── 📂 store/                    # Global state management (Zustand/Redux)
-│── 📂 types/                    # TypeScript types
-│   ├── auth.d.ts                # OAuth types
-│   ├── db.d.ts                  # PostgreSQL table types
-│   ├── timetable.d.ts           # Timetable-related types
-│── 📂 config/                    # Configuration files
-│   ├── env.ts                    # Environment variable loader
-│   ├── oauth.ts                  # Google OAuth settings
-│   ├── db.ts                      # PostgreSQL connection config
-│── 📂 database/                   # PostgreSQL setup
-│   ├── init.sql                   # SQL schema setup
-│   ├── seed.sql                   # Sample test data
-│   ├── migrations/                 # Database migration scripts
-│── 📂 docker/                      # Docker setup
-│   ├── Dockerfile                  # Next.js container
-│   ├── docker-compose.yml           # PostgreSQL + Redis + Next.js
-│── 📂 tests/                        # Unit & integration tests
-│   ├── 📂 api/                      # API test cases
-│   ├── 📂 ui/                       # UI component tests
-│   ├── setup.ts                     # Jest/Playwright setup
-│── .env                             # Environment variables
-│── next.config.js                   # Next.js configuration
-│── package.json                      # Dependencies
-│── tsconfig.json                      # TypeScript config
-│── README.md                         # Documentation
+/app
+│
+├── layout.tsx                 # Root layout (e.g., theme, ModeToggle)
+├── page.tsx                   # Landing page (Login with Google)
+│
+├── signup/
+│   └── page.tsx               # Shown if user is new, capture extra details
+│
+├── dashboard/                 # Authenticated area, shared by all roles
+│   ├── layout.tsx            # Dashboard layout with sidebar + header
+│   ├── page.tsx              # Dashboard overview (lecturer info, stats)
+│   │
+│   ├── components/           # UI Components used only in dashboard
+│   │   ├── Sidebar.tsx
+│   │   ├── Header.tsx
+│   │   ├── StepLockIndicator.tsx
+│   │   └── YearBatchStats.tsx
+│   │
+│   ├── steps/                # Pages for each step (access-controlled)
+│   │   ├── 1-create-year/
+│   │   │   └── page.tsx      # Step 1: Create year, batch, subject
+│   │   ├── 2-manage-subjects/
+│   │   │   └── page.tsx      # Step 2: Subject Management
+│   │   ├── 3-priority-form/
+│   │   │   └── page.tsx      # Step 3: Create subject priority form
+│   │   ├── 4-priority-selection/
+│   │   │   └── page.tsx      # Step 4: Lecturer selects priorities
+│   │   ├── 5-auto-assignment/
+│   │   │   └── page.tsx      # Step 5: Auto assign & notify HOD
+│   │   ├── 6-hod-review/
+│   │   │   └── page.tsx      # Step 6: HOD review subject assignments
+│   │   ├── 7-finalize-subjects/
+│   │   │   └── page.tsx
+│   │   ├── 8-create-timetable/
+│   │   │   └── page.tsx
+│   │   ├── 9-format-review/
+│   │   │   └── page.tsx
+│   │   ├── 10-autogenerate-timetable/
+│   │   │   └── page.tsx
+│   │   ├── 11-hod-edit-timetable/
+│   │   │   └── page.tsx
+│   │   └── 12-finalize-timetable/
+│   │       └── page.tsx
+│
+├── components/               # Global shared components
+│   ├── ui/                   # Tailwind-styled components (Input, Button, etc.)
+│   ├── icons/
+│   ├── GoogleButton.tsx
+│   └── ModeToggle.tsx
+│
+├── lib/
+│   ├── auth.ts               # Check login, handle redirection
+│   ├── api.ts                # API handler (fetch wrapper)
+│   └── roles.ts              # Helpers for role-based access logic
+│
+├── hooks/
+│   └── useUser.ts            # Get current user info, role, auth status
+│
+├── middleware.ts             # Auth middleware (optional)
+└── types/
+    └── index.ts              # Types for User, Role, Subject, etc.
 
 
 
 ```
 
+# Timetable Management System - Project Workflow
 
+This is a FastAPI (backend) + Next.js (frontend) based project for managing timetable creation, subject assignment, and academic coordination across different user roles (Lecturers, Timetable Coordinators, and HODs).
 
+---
 
+## 🧑‍💻 Authentication & User Flow
 
+- Users sign in or sign up using **Google Authentication**.
+- After login:
+  - If the user **already exists**, they are redirected to the **dashboard**.
+  - If **not registered**, they are prompted with a **signup form** to fill in necessary details.
 
-  STEP_3_SUBJECT_PRIORITY_FORM = 3  
+---
+
+## 🧭 Dashboard Overview (Common for All Users)
+
+- A **unified dashboard** is available for all roles:
+  - Lecturers
+  - Timetable Coordinators
+  - HODs
+
+- It contains:
+  - A **sidebar** with the workflow steps (listed below).
+  - Header with profile and navigation controls.
+  - View of:
+    - **Lecturer details**
+    - **Year, batch, and subject information** if created
+    - Necessary statistics
+
+---
+
+```
+ STEP_3_SUBJECT_PRIORITY_FORM = 3  
   To send to notification to fill the form 
   when step == 3:
     store notification in radis 
     display to users
-    update the ui based for step
+    update the ui based for step 
+```
+
+## 🔁 Workflow Steps (Sidebar Navigation)
+
+The sidebar lists the following **12 workflow steps**. Only the **Timetable Coordinator** can progress the workflow, ensuring it moves **sequentially** (locked until previous step is completed):
+
+1. **Create Year and Batch**
+2. **Subject Management**
+3. **Create Subject Priority Form**
+4. **Lecturer Priority Selection**
+5. **Auto Subject Assignment & Send to HOD**
+6. **HOD Review and Approval**
+7. **Finalize Subject Allocation**
+8. **Timetable Format Creation**
+9. **Timetable Format Review and Finalization**
+10. **Auto-generate Timetable & Send to HOD**
+11. **HOD Edit and Update Timetable**
+12. **Final Timetable Confirmation**
+
+---
+
+## 🧑‍🏫 Lecturer Role
+
+- **Login:** Lecturers log in via Google.
+- **Update Profile:** Complete or update personal and professional details.
+- **Subject Priority Selection:** Choose up to 5 subjects in order of preference (when form is sent by the coordinator).
+
+---
+
+## 🧑‍🎓 Timetable Coordinator Role
+
+- **Create Academic Year and Batches**
+- **Manage Subjects:** Enter subject name, code, and required hours.
+- **Send Priority Form:** Distribute subject preference forms to lecturers.
+- **View & Automate Subject Assignment:** Based on:
+  - Seniority
+  - Last year’s subjects
+  - Current priorities
+- **Manage Workflow:** Unlock and proceed through workflow steps.
+- **Create and Generate Timetable**
+
+---
+
+## 👨‍💼 HOD Role
+
+- **Review Subject Assignments**
+- **Approve or Modify Assignments**
+- **Review and Edit Timetable**
+- **Finalize Timetable**
+
+---
+
+
+
