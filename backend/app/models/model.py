@@ -43,7 +43,7 @@ class Users(Base):
 
     user_id = Column(Integer, primary_key=True)
     uname = Column(String(50), nullable=False)
-    email = Column(String(255), unique=True, nullable=False)
+    email = Column(String(255), unique=True, index=True, nullable=False)
     role = Column(Enum(RoleEnum), nullable=False)
     oauth_provider = Column(String(50), nullable=False)
     oauth_id = Column(String(100), unique=True, nullable=False)
@@ -51,21 +51,24 @@ class Users(Base):
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=func.now())
 
-    created_academic_years = relationship("AcademicYears", back_populates="creator", cascade="all, delete")
-    created_batches = relationship("Batches", back_populates="creator", cascade="all, delete")
-    created_subjects = relationship("Subjects", back_populates="creator", cascade="all, delete")
-    preferences = relationship("LecturerPreferences", back_populates="lecturer", cascade="all, delete")
-    assignments_given = relationship("LecturerSubAssignments", foreign_keys='LecturerSubAssignments.assigned_by', cascade="all, delete")
-    assignments_received = relationship("LecturerSubAssignments", foreign_keys='LecturerSubAssignments.lecturer_id', cascade="all, delete")
-    created_formats = relationship("TimetableHourFormats", back_populates="creator", cascade="all, delete")
-    created_timetables = relationship("Timetable", back_populates="creator", cascade="all, delete")
+    created_academic_years = relationship("AcademicYears", back_populates="creator")
+    created_batches = relationship("Batches", back_populates="creator")
+    created_subjects = relationship("Subjects", back_populates="creator")
+    preferences = relationship("LecturerPreferences", back_populates="lecturer")
+    assignments_given = relationship("LecturerSubAssignments", foreign_keys='LecturerSubAssignments.assigned_by')
+    assignments_received = relationship("LecturerSubAssignments", foreign_keys='LecturerSubAssignments.lecturer_id')
+    created_formats = relationship("TimetableHourFormats", back_populates="creator")
+    created_timetables = relationship("Timetable", back_populates="creator", foreign_keys='Timetable.created_by')
+
+    def __repr__(self):
+        return f"<User(id={self.user_id}, uname='{self.uname}', email='{self.email}', role='{self.role.name}')>"    
 
 class AcademicYears(Base):
     __tablename__ = "academicyears"
 
     year_id = Column(Integer, primary_key=True)
     academic_year = Column(String(50), nullable=False)
-    created_by = Column(Integer, ForeignKey("users.user_id"), nullable=False)
+    created_by = Column(Integer, ForeignKey("users.user_id", ondelete="RESTRICT"), nullable=False)
     created_at = Column(DateTime, default=func.now())
 
     creator = relationship("Users", back_populates="created_academic_years")
@@ -74,14 +77,18 @@ class AcademicYears(Base):
     preferences = relationship("LecturerPreferences", back_populates="year", cascade="all, delete")
     assignments = relationship("LecturerSubAssignments", back_populates="academic_year", cascade="all, delete")
 
+    def __repr__(self):
+        return f"<AcademicYear(id={self.year_id}, year='{self.academic_year}')>"
+
+
 class Batches(Base):
     __tablename__ = "batches"
 
     batch_id = Column(Integer, primary_key=True)
-    year_id = Column(Integer, ForeignKey("academicyears.year_id"), nullable=False)
+    year_id = Column(Integer, ForeignKey("academicyears.year_id", ondelete="RESTRICT"), nullable=False)
     section = Column(String(10), nullable=False)
     noOfStudent = Column(Integer, nullable=False)
-    created_by = Column(Integer, ForeignKey("users.user_id"), nullable=False)
+    created_by = Column(Integer, ForeignKey("users.user_id", ondelete="RESTRICT"), nullable=False)
     created_at = Column(DateTime, default=func.now())
 
     year = relationship("AcademicYears", back_populates="batches")
@@ -90,16 +97,20 @@ class Batches(Base):
     formats = relationship("TimetableHourFormats", back_populates="batch", cascade="all, delete")
     timetables = relationship("Timetable", back_populates="batch", cascade="all, delete")
 
+    def __repr__(self):
+        return f"<Batch(id={self.batch_id}, section='{self.section}', year_id={self.year_id})>"
+
+
 class Subjects(Base):
     __tablename__ = "subjects"
 
     subject_id = Column(Integer, primary_key=True)
-    year_id = Column(Integer, ForeignKey("academicyears.year_id"), nullable=False)
+    year_id = Column(Integer, ForeignKey("academicyears.year_id", ondelete="RESTRICT"), nullable=False)
     subject_name = Column(String(255), nullable=False)
-    subject_code = Column(String(100), unique=True, nullable=False)
+    subject_code = Column(String(100), unique=True, index=True, nullable=False)
     subject_type = Column(Enum(SubjectTypeEnum), nullable=False)
     no_of_hours_required = Column(Integer, nullable=False)
-    created_by = Column(Integer, ForeignKey("users.user_id"), nullable=False)
+    created_by = Column(Integer, ForeignKey("users.user_id", ondelete="RESTRICT"), nullable=False)
     created_at = Column(DateTime, default=func.now())
 
     year = relationship("AcademicYears", back_populates="subjects")
@@ -108,6 +119,10 @@ class Subjects(Base):
     assignments = relationship("LecturerSubAssignments", back_populates="subject", cascade="all, delete")
     timetables = relationship("Timetable", back_populates="subject", cascade="all, delete")
 
+    def __repr__(self):
+        return f"<Subject(id={self.subject_id}, name='{self.subject_name}', code='{self.subject_code}', type='{self.subject_type.name}')>"
+
+
 class LecturerPreferences(Base):
     __tablename__ = "lecturerpreferences"
     __table_args__ = (
@@ -115,9 +130,9 @@ class LecturerPreferences(Base):
     )
 
     preference_id = Column(Integer, primary_key=True)
-    lecturer_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
-    selected_sub_id = Column(Integer, ForeignKey("subjects.subject_id"), nullable=False)
-    year_id = Column(Integer, ForeignKey("academicyears.year_id"), nullable=False)
+    lecturer_id = Column(Integer, ForeignKey("users.user_id", ondelete="RESTRICT"), nullable=False)
+    selected_sub_id = Column(Integer, ForeignKey("subjects.subject_id", ondelete="RESTRICT"), nullable=False)
+    year_id = Column(Integer, ForeignKey("academicyears.year_id", ondelete="RESTRICT"), nullable=False)
     priority = Column(Integer, nullable=False)
     created_at = Column(DateTime, default=func.now())
 
@@ -125,15 +140,19 @@ class LecturerPreferences(Base):
     subject = relationship("Subjects", back_populates="preferences")
     year = relationship("AcademicYears", back_populates="preferences")
 
+    def __repr__(self):
+        return f"<LecturerPreference(id={self.preference_id}, lecturer_id={self.lecturer_id}, subject_id={self.selected_sub_id}, year_id={self.year_id}, priority={self.priority})>"
+
+
 class LecturerSubAssignments(Base):
     __tablename__ = "lecturersubassignments"
 
     assignment_id = Column(Integer, primary_key=True)
-    lecturer_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
-    subject_id = Column(Integer, ForeignKey("subjects.subject_id"), nullable=False)
-    batch_id = Column(Integer, ForeignKey("batches.batch_id"), nullable=False)
-    academic_year_id = Column(Integer, ForeignKey("academicyears.year_id"), nullable=False)
-    assigned_by = Column(Integer, ForeignKey("users.user_id"), nullable=False)
+    lecturer_id = Column(Integer, ForeignKey("users.user_id", ondelete="RESTRICT"), nullable=False)
+    subject_id = Column(Integer, ForeignKey("subjects.subject_id", ondelete="RESTRICT"), nullable=False)
+    batch_id = Column(Integer, ForeignKey("batches.batch_id", ondelete="RESTRICT"), nullable=False)
+    academic_year_id = Column(Integer, ForeignKey("academicyears.year_id", ondelete="RESTRICT"), nullable=False)
+    assigned_by = Column(Integer, ForeignKey("users.user_id", ondelete="RESTRICT"), nullable=False)
     status = Column(Enum(ApprovalStatusEnum), default=ApprovalStatusEnum.Pending)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
@@ -144,34 +163,41 @@ class LecturerSubAssignments(Base):
     batch = relationship("Batches", back_populates="assignments")
     academic_year = relationship("AcademicYears", back_populates="assignments")
 
+    def __repr__(self):
+        return f"<Assignment(id={self.assignment_id}, lecturer_id={self.lecturer_id}, subject_id={self.subject_id}, batch_id={self.batch_id}, status='{self.status.name}')>"
+
+
 class TimetableHourFormats(Base):
     __tablename__ = "timetablehourformats"
 
     format_id = Column(Integer, primary_key=True)
-    batch_id = Column(Integer, ForeignKey("batches.batch_id"), nullable=False)
+    batch_id = Column(Integer, ForeignKey("batches.batch_id", ondelete="RESTRICT"), nullable=False)
     format_data = Column(JSON, nullable=False)
-    created_by = Column(Integer, ForeignKey("users.user_id"), nullable=False)
+    created_by = Column(Integer, ForeignKey("users.user_id", ondelete="RESTRICT"), nullable=False)
     created_at = Column(DateTime, default=func.now())
 
     batch = relationship("Batches", back_populates="formats")
     creator = relationship("Users", back_populates="created_formats")
     timetables = relationship("Timetable", back_populates="format")
 
+    def __repr__(self):
+        return f"<TimetableFormat(id={self.format_id}, batch_id={self.batch_id})>"
+
+
 class Timetable(Base):
     __tablename__ = "timetable"
-
     __table_args__ = (
-    UniqueConstraint('batch_id', 'day', 'time_slot', name='uq_batch_day_slot'),
+        UniqueConstraint('batch_id', 'day', 'time_slot', name='uq_batch_day_slot'),
     )
 
     timetable_id = Column(Integer, primary_key=True)
-    format_id = Column(Integer, ForeignKey("timetablehourformats.format_id"), nullable=False)
-    batch_id = Column(Integer, ForeignKey("batches.batch_id"), nullable=False)
+    format_id = Column(Integer, ForeignKey("timetablehourformats.format_id", ondelete="RESTRICT"), nullable=False)
+    batch_id = Column(Integer, ForeignKey("batches.batch_id", ondelete="RESTRICT"), nullable=False)
     day = Column(String(20), nullable=False)
     time_slot = Column(String(50), nullable=False)
-    subject_id = Column(Integer, ForeignKey("subjects.subject_id"), nullable=False)
-    lecturer_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
-    created_by = Column(Integer, ForeignKey("users.user_id"), nullable=False)
+    subject_id = Column(Integer, ForeignKey("subjects.subject_id", ondelete="RESTRICT"), nullable=False)
+    lecturer_id = Column(Integer, ForeignKey("users.user_id", ondelete="RESTRICT"), nullable=False)
+    created_by = Column(Integer, ForeignKey("users.user_id", ondelete="RESTRICT"), nullable=False)
     created_at = Column(DateTime, default=func.now())
 
     format = relationship("TimetableHourFormats", back_populates="timetables")
@@ -180,6 +206,10 @@ class Timetable(Base):
     creator = relationship("Users", back_populates="created_timetables", foreign_keys=[created_by])
     lecturer = relationship("Users", foreign_keys=[lecturer_id])
 
+    def __repr__(self):
+        return f"<Timetable(id={self.timetable_id}, batch_id={self.batch_id}, day='{self.day}', slot='{self.time_slot}', subject_id={self.subject_id},lecturer_id={self.lecturer_id})>"
+
+
 class WorkflowStatus(Base):
     __tablename__ = "workflowstatus"
     __table_args__ = (
@@ -187,8 +217,12 @@ class WorkflowStatus(Base):
     )
 
     workflow_id = Column(Integer, primary_key=True)
-    year_id = Column(Integer, ForeignKey("academicyears.year_id"), nullable=False)
+    year_id = Column(Integer, ForeignKey("academicyears.year_id", ondelete="RESTRICT"), nullable=False)
     workflow_step = Column(Enum(WorkflowStageEnum), nullable=False)
     created_at = Column(DateTime, default=func.now())
 
-    year = relationship("AcademicYears")  
+    year = relationship("AcademicYears")
+
+    def __repr__(self):
+        return f"<WorkflowStatus(id={self.workflow_id}, year_id={self.year_id}, step='{self.workflow_step.name}')>"
+

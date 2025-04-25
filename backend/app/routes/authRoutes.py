@@ -5,6 +5,33 @@ import httpx
 
 authRoute = APIRouter()
 
+"""
+1. Google redirects to your `/auth/callback` with `code` as a query param.
+2. Use this `code` to request tokens (access, refresh, expires_in).
+3. Create a session_id.
+4. Store the session_id as key in Redis with value:
+   (access, refresh, expires_in, signed_in=true/false, email,role)
+
+5. Check if the user already exists in DB:
+   - If exists:
+     - Store session_id in cookie.
+     - Redirect to dashboard.
+
+   - If not exists:
+     - Redirect to frontend `signup` page.
+     - On POST `/users/signup`:
+       - Read session_id from cookie.
+       - Fetch data from Redis.
+       - Store new user in DB.
+       - Clean Redis data (remove temp fields like signed_in=false).
+       - Redirect to dashboard.
+
+       Redis TTL:
+        Set an appropriate TTL (e.g., 1 hour for signed_in=false, longer for signed in).
+
+    For long-lived sessions, store the refresh token securely.
+"""
+
 @authRoute.get("/callback")
 async def signin_redirect(request:Request):
     code = request.query_params.get("code")
@@ -45,3 +72,14 @@ async def signin_redirect(request:Request):
         "refresh_token": refresh_token,
         "expires_in": expires_in,
     }
+
+
+
+"""
+- Get the session ID from cookies.
+- Clear the session ID and associated token from Redis.
+- Also delete the session ID cookie from the user's browser.
+"""
+authRoute.get("\logout")
+def logout_user():
+    pass
