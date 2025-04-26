@@ -1,11 +1,13 @@
 from fastapi import APIRouter,Request,Depends
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse,RedirectResponse
+from datetime import datetime, timedelta,timezone
 import httpx
 from app.config import GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,REDIRECT_URI
 from app.db.postgres_client import get_db
 from sqlalchemy.orm import Session
+from app.config import FRONTEND_BASE_URL
 from app.services.user_service import get_userby_email
-from app.services.auth_services import get_userDetails_from_google
+from app.services.auth_services import get_userDetails_from_google,generate_session_id,store_session_in_redis
 
 authRoute = APIRouter()
 
@@ -37,28 +39,32 @@ authRoute = APIRouter()
 """
 
 @authRoute.get("/callback")
-async def signin_redirect(request:Request,db:Session = Depends(get_db)):
+async def signin_redirect(request: Request, db: Session = Depends(get_db)):
     code = request.query_params.get("code")
 
     if not code:
         return JSONResponse(status_code=400, content={"error": "Authorization code missing"})
-    
+
+
     # Make request to Google's token endpoint
     async with httpx.AsyncClient() as client:
-        response = await client.post(
-            "https://oauth2.googleapis.com/token",
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
-            data={
-                "client_id": GOOGLE_CLIENT_ID,
-                "client_secret": GOOGLE_CLIENT_SECRET,
-                "redirect_uri": REDIRECT_URI,
-                "code": code,
-                "grant_type": "authorization_code",
-            },
-        )
-
+        try:
+            response = await client.post(
+                "https://oauth2.googleapis.com/token",
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                data={
+                    "client_id": GOOGLE_CLIENT_ID,
+                    "client_secret": GOOGLE_CLIENT_SECRET,
+                    "redirect_uri": REDIRECT_URI,
+                    "code": code,
+                    "grant_type": "authorization_code",
+                },
+            )
+            response.raise_for_status() 
+        except httpx.RequestError as e:
+            return JSONResponse(status_code=500, content={"error": f"An error occurred: {str(e)}"})
+        
     token_data = response.json()
-
 
     if "error" in token_data:
         return JSONResponse(
@@ -67,8 +73,6 @@ async def signin_redirect(request:Request,db:Session = Depends(get_db)):
         )
 
     access_token = token_data.get("access_token")
-    refresh_token = token_data.get("refresh_token")
-    expires_in = token_data.get("expires_in")
 
     userData = await get_userDetails_from_google(access_token)
 
@@ -77,21 +81,65 @@ async def signin_redirect(request:Request,db:Session = Depends(get_db)):
 
     email = userData["email"]
 
-    user_exists = get_userby_email(email=email, db=db)
+    user_exists =  get_userby_email(email=email, db=db)
 
     if user_exists and user_exists.email == email:
-        # store it in Redis
-        pass
+        # User exists, create session ID
+        sessionid =  generate_session_id()
 
+        sessionData = {
+            "user_id": user_exists.id,
+            "role": user_exists.role,
+            "name": user_exists.name,
+            "email": user_exists.email,
+            "image_url": userData.get("picture"),
+            "access_token": token_data.get("access_token"),
+            "refresh_token": token_data.get("refresh_token"),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "expires_at": (datetime.now(timezone.utc) + timedelta(seconds=token_data.get("expires_in"))).isoformat(),
+            "is_signedUp": True
+        }
 
-    return {
-        "access_token": access_token,
-        "token": token_data,
-        "refresh_token": refresh_token,
-        "expires_in": expires_in,
-        "userData" : userData
-    }
+        expire_seconds = "7d"  # Session expiration TTL
 
+        # Store session data in Redis
+        res = await store_session_in_redis(session_id=f"sessionid:{sessionid}", sessionData=sessionData, ttl=expire_seconds)
+
+        # Redirect to dashboard and set cookie
+        response = RedirectResponse(url=f"{FRONTEND_BASE_URL}/dashboard")
+
+        response.set_cookie(key="session_id", value=sessionid, httponly=True, secure=True)
+        return response
+
+    else:
+
+        sessionid =  generate_session_id()
+
+        sessionData = {
+            "role": "user",  
+            "name": userData.get("name"),
+            "email": userData["email"],
+            "image_url": userData.get("picture"),
+            "access_token": token_data.get("access_token"),
+            "refresh_token": token_data.get("refresh_token"),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "expires_at": (datetime.now(timezone.utc) + timedelta(seconds=token_data.get("expires_in"))).isoformat(),
+            "is_signedUp": False
+        }
+
+        expire_seconds = "1h"  # Session expiration TTL
+
+        # Store session data in Redis
+        res = await store_session_in_redis(session_id=f"sessionid:{sessionid}", data=sessionData, ttl=expire_seconds)
+
+        if not res:
+            return JSONResponse(status_code=500, content={"error": "Failed to store session in Redis"})
+        
+        # User does not exist, redirect to signup page
+        response = RedirectResponse(url=f"{FRONTEND_BASE_URL}/signup")
+        response.set_cookie(key="session_id", value=sessionid, httponly=True, secure=True)
+        return response
+         
 
 
 """
@@ -99,6 +147,6 @@ async def signin_redirect(request:Request,db:Session = Depends(get_db)):
 - Clear the session ID and associated token from Redis.
 - Also delete the session ID cookie from the user's browser.
 """
-# authRoute.get("\logout")
+# authRoute.get("/logout")
 # def logout_user():
 #     pass
