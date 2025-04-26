@@ -1,7 +1,11 @@
-from fastapi import APIRouter,Request
-from app.config import GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,REDIRECT_URI
+from fastapi import APIRouter,Request,Depends
 from fastapi.responses import JSONResponse
 import httpx
+from app.config import GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,REDIRECT_URI
+from app.db.postgres_client import get_db
+from sqlalchemy.orm import Session
+from app.services.user_service import get_userby_email
+from app.services.auth_services import get_userDetails_from_google
 
 authRoute = APIRouter()
 
@@ -33,7 +37,7 @@ authRoute = APIRouter()
 """
 
 @authRoute.get("/callback")
-async def signin_redirect(request:Request):
+async def signin_redirect(request:Request,db:Session = Depends(get_db)):
     code = request.query_params.get("code")
 
     if not code:
@@ -66,11 +70,26 @@ async def signin_redirect(request:Request):
     refresh_token = token_data.get("refresh_token")
     expires_in = token_data.get("expires_in")
 
+    userData = await get_userDetails_from_google(access_token)
+
+    if "error" in userData or "email" not in userData:
+        return JSONResponse(status_code=400, content={"error": "Failed to fetch user info from Google"})
+
+    email = userData["email"]
+
+    user_exists = get_userby_email(email=email, db=db)
+
+    if user_exists and user_exists.email == email:
+        # store it in Redis
+        pass
+
+
     return {
         "access_token": access_token,
         "token": token_data,
         "refresh_token": refresh_token,
         "expires_in": expires_in,
+        "userData" : userData
     }
 
 
@@ -80,6 +99,6 @@ async def signin_redirect(request:Request):
 - Clear the session ID and associated token from Redis.
 - Also delete the session ID cookie from the user's browser.
 """
-authRoute.get("\logout")
-def logout_user():
-    pass
+# authRoute.get("\logout")
+# def logout_user():
+#     pass

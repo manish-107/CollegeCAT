@@ -1,6 +1,25 @@
 from fastapi import Request,Response
 from typing import Optional
 from datetime import datetime
+import httpx
+
+
+"""
+Get user details form google with provided access token
+"""
+async def get_userDetails_from_google(token:str) -> dict:
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            "https://www.googleapis.com/oauth2/v1/userinfo?alt=json",
+            headers={"Authorization": f"Bearer {token}"},
+        ) 
+
+    if response.status_code != 200:
+        return {"error": "Failed to fetch user info from Google"}
+    
+    return response.json()
+
+
 
 """
 1. Using session ID, fetch refresh token from Redis
