@@ -67,6 +67,24 @@ async def store_session_in_redis(session_id: str, data: dict, ttl: str):
 
 
 """
+Fetch session data from Redis using session ID
+Raises error if session is not found
+"""
+async def get_session_data(session_id: str) -> dict:
+    sessionData = await redis_client.get(f"sessionid:{session_id}")
+    if sessionData is None:
+        return {}
+
+    # if sessionData is bytes, decode it first
+    if isinstance(sessionData, bytes):
+        sessionData = sessionData.decode("utf-8")
+        
+    session_dict = json.loads(sessionData)
+    return session_dict
+
+
+
+"""
 1. Using session ID, fetch refresh token from Redis
 2. Request new access token from Google
 3. Update the access token + expiry in Redis
@@ -82,17 +100,6 @@ Return True if expired, False otherwise
 def is_token_expired(session_data: dict) -> bool:
     pass
 
-
-
-
-
-
-"""
-Fetch session data from Redis using session ID
-Raises error if session is not found
-"""
-def get_session_data(session_id: str) -> dict:
-    pass
 
 
 """

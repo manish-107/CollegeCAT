@@ -12,13 +12,14 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import axios from "axios";
 
 const RegistrationForm = () => {
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
   const [year, setYear] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !role || !year) {
       toast.error("Please fill in all fields");
@@ -32,18 +33,33 @@ const RegistrationForm = () => {
       return;
     }
 
-    toast.success("Registration details submitted successfully");
+    try {
+      const response = await axios.post("http://localhost:3000/api/auth/signup", {
+        uname: name,
+        role: role,
+        joining_year: year,
+      }, {
+        withCredentials: true,
+      });
 
-    setName('');
-    setRole('');
-    setYear('');
+      console.log(response)
+
+      toast.success("Registration successful!");
+      setName('');
+      setRole('');
+      setYear('');
+
+      // Optionally, redirect to dashboard
+      // window.location.href = "/dashboard";
+
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error?.response?.data?.error || "Something went wrong during signup");
+    }
   };
 
   return (
     <div className="relative flex justify-center items-center bg-gray-100 dark:bg-black min-h-screen">
-      {/* Mode Toggle positioned at the top-right corner */}
-     
-
       <form
         onSubmit={handleSubmit}
         className="space-y-8 bg-white dark:bg-white/5 dark:backdrop-blur-sm p-8 border border-white/10 rounded-2xl w-full max-w-lg text-black dark:text-white"
@@ -71,10 +87,11 @@ const RegistrationForm = () => {
               <SelectValue placeholder="Select role" />
             </SelectTrigger>
             <SelectContent className="dark:bg-black dark:border-neutral-800">
-              <SelectItem value="timetable-coordinator">Timetable Coordinator</SelectItem>
-              <SelectItem value="teacher">Teacher</SelectItem>
-              <SelectItem value="hod">HOD</SelectItem>
+              <SelectItem value="Timetable Coordinator">Timetable Coordinator</SelectItem>
+              <SelectItem value="Lecturer">Lecturer</SelectItem>
+              <SelectItem value="HOD">HOD</SelectItem>
             </SelectContent>
+
           </Select>
         </div>
 
@@ -99,7 +116,6 @@ const RegistrationForm = () => {
           Submit
         </Button>
       </form>
-
     </div>
   );
 };

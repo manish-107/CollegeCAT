@@ -4,10 +4,12 @@ from datetime import datetime, timedelta,timezone
 import httpx
 from app.config import GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,REDIRECT_URI
 from app.db.postgres_client import get_db
+from app.db.radis_client import redis_client
 from sqlalchemy.orm import Session
+from app.schemas.user_schema import signupData
 from app.config import FRONTEND_BASE_URL
-from app.services.user_service import get_userby_email
-from app.services.auth_services import get_userDetails_from_google,generate_session_id,store_session_in_redis
+from app.services.user_service import get_userby_email,insert_userDetails
+from app.services.auth_services import get_userDetails_from_google,generate_session_id,store_session_in_redis,get_session_data
 
 authRoute = APIRouter()
 
@@ -76,6 +78,8 @@ async def signin_redirect(request: Request, db: Session = Depends(get_db)):
 
     userData = await get_userDetails_from_google(access_token)
 
+    print(userData.get("id"))
+
     if "error" in userData or "email" not in userData:
         return JSONResponse(status_code=400, content={"error": "Failed to fetch user info from Google"})
 
@@ -88,9 +92,10 @@ async def signin_redirect(request: Request, db: Session = Depends(get_db)):
         sessionid =  generate_session_id()
 
         sessionData = {
-            "user_id": user_exists.id,
-            "role": user_exists.role,
-            "name": user_exists.name,
+            "user_id": user_exists.user_id,
+            "oauth_id":userData.get("id"),
+            "role": user_exists.role.value,
+            "name": user_exists.uname,
             "email": user_exists.email,
             "image_url": userData.get("picture"),
             "access_token": token_data.get("access_token"),
@@ -103,7 +108,7 @@ async def signin_redirect(request: Request, db: Session = Depends(get_db)):
         expire_seconds = "7d"  # Session expiration TTL
 
         # Store session data in Redis
-        res = await store_session_in_redis(session_id=f"sessionid:{sessionid}", sessionData=sessionData, ttl=expire_seconds)
+        res = await store_session_in_redis(session_id=f"sessionid:{sessionid}", data=sessionData, ttl=expire_seconds)
 
         # Redirect to dashboard and set cookie
         response = RedirectResponse(url=f"{FRONTEND_BASE_URL}/dashboard")
@@ -116,7 +121,8 @@ async def signin_redirect(request: Request, db: Session = Depends(get_db)):
         sessionid =  generate_session_id()
 
         sessionData = {
-            "role": "user",  
+            "role": "user",
+            "oauth_id":userData.get("id"),  
             "name": userData.get("name"),
             "email": userData["email"],
             "image_url": userData.get("picture"),
@@ -140,6 +146,82 @@ async def signin_redirect(request: Request, db: Session = Depends(get_db)):
         response.set_cookie(key="session_id", value=sessionid, httponly=True, secure=True)
         return response
          
+
+"""
+user enters the details and hits signup endpoint
+get user details and cookies
+user sessionid from cookie get previous stored data
+store user details in db
+delete old details from radis 
+create a new sessionid and add correct details to radis
+delete previous sessionid cookie
+app another sessionid recently created 
+redirect to /dashboard
+"""
+
+@authRoute.post("/signup")
+async def complete_signup(signupData: signupData, request: Request, db: Session = Depends(get_db)):
+    cookies = request.cookies  # no await here
+    old_session_id = cookies.get("session_id")
+
+    if not old_session_id:
+        return JSONResponse(status_code=400, content={"error": "Session ID missing in cookie"})
+
+    sessionData = await get_session_data(old_session_id) 
+
+    if not sessionData:
+        return JSONResponse(status_code=400, content={"error": "Invalid or expired session"})
+
+    # Delete old session from Redis
+    await redis_client.delete(f"sessionid:{old_session_id}")
+
+    # Insert user into the database
+    inserted_user = insert_userDetails(
+        db=db,
+        userDetails=signupData,
+        email=sessionData.get("email"),
+        oauth_provider="google",
+        oauth_id=sessionData.get("oauth_id")
+    )
+
+    if not inserted_user:
+        return JSONResponse(status_code=500, content={"error": "Failed to create user"})
+
+    # Create new session
+    new_session_id = generate_session_id()
+
+    new_session_data = {
+        "user_id": inserted_user.user_id,
+        "role": inserted_user.role.value,
+        "name": inserted_user.uname,
+        "email": inserted_user.email,
+        "image_url": sessionData.get("image_url"),
+        "access_token": sessionData.get("access_token"),
+        "refresh_token": sessionData.get("refresh_token"),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "expires_at": sessionData.get("expires_at"),
+        "is_signedUp": True
+    }
+
+    expire_seconds = "7d"  # Session expiration TTL
+
+    # Store new session
+    await store_session_in_redis(session_id=f"sessionid:{new_session_id}", data=new_session_data, ttl=expire_seconds)
+
+    # Prepare response
+    response = RedirectResponse(url=f"{FRONTEND_BASE_URL}/dashboard")
+    response.delete_cookie(key="session_id")  # delete old cookie
+    response.set_cookie(key="session_id", value=new_session_id, httponly=True, secure=True)
+
+    return response
+
+
+
+
+    
+
+
+
 
 
 """
