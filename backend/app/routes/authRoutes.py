@@ -2,6 +2,7 @@ from fastapi import APIRouter,Request,Depends
 from fastapi.responses import JSONResponse,RedirectResponse
 from datetime import datetime, timedelta,timezone
 import httpx
+import json
 from app.config import GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,REDIRECT_URI
 from app.db.postgres_client import get_db
 from app.db.radis_client import redis_client
@@ -45,8 +46,7 @@ async def signin_redirect(request: Request, db: Session = Depends(get_db)):
     code = request.query_params.get("code")
 
     if not code:
-        return JSONResponse(status_code=400, content={"error": "Authorization code missing"})
-
+        return RedirectResponse(url=f"{FRONTEND_BASE_URL}/?error=code_missing")
 
     # Make request to Google's token endpoint
     async with httpx.AsyncClient() as client:
@@ -64,15 +64,12 @@ async def signin_redirect(request: Request, db: Session = Depends(get_db)):
             )
             response.raise_for_status() 
         except httpx.RequestError as e:
-            return JSONResponse(status_code=500, content={"error": f"An error occurred: {str(e)}"})
+            return RedirectResponse(url=f"{FRONTEND_BASE_URL}/?error=token_exchange_failed")
         
     token_data = response.json()
 
     if "error" in token_data:
-        return JSONResponse(
-            status_code=400,
-            content={"error": token_data.get("error_description", "OAuth token exchange failed")},
-        )
+        return RedirectResponse(url=f"{FRONTEND_BASE_URL}/?error=invalid_token_data")
 
     access_token = token_data.get("access_token")
 
@@ -81,7 +78,7 @@ async def signin_redirect(request: Request, db: Session = Depends(get_db)):
     print(userData.get("id"))
 
     if "error" in userData or "email" not in userData:
-        return JSONResponse(status_code=400, content={"error": "Failed to fetch user info from Google"})
+        return RedirectResponse(url=f"{FRONTEND_BASE_URL}/?error=user_info_fetch_failed")
 
     email = userData["email"]
 
@@ -106,6 +103,12 @@ async def signin_redirect(request: Request, db: Session = Depends(get_db)):
         }
 
         expire_seconds = "7d"  # Session expiration TTL
+        
+        old_session_id = await redis_client.get(f"user_session:{user_exists.user_id}")
+
+        if old_session_id:
+            await redis_client.delete(old_session_id)
+            await redis_client.delete(f"user_session:{user_exists.user_id}")
 
         # Store session data in Redis
         res = await store_session_in_redis(session_id=f"sessionid:{sessionid}", data=sessionData, ttl=expire_seconds)
@@ -139,7 +142,7 @@ async def signin_redirect(request: Request, db: Session = Depends(get_db)):
         res = await store_session_in_redis(session_id=f"sessionid:{sessionid}", data=sessionData, ttl=expire_seconds)
 
         if not res:
-            return JSONResponse(status_code=500, content={"error": "Failed to store session in Redis"})
+            return RedirectResponse(url=f"{FRONTEND_BASE_URL}/?error=session_store_failed")
         
         # User does not exist, redirect to signup page
         response = RedirectResponse(url=f"{FRONTEND_BASE_URL}/signup")
@@ -217,18 +220,35 @@ async def complete_signup(signupData: signupData, request: Request, db: Session 
 
 
 
-
-    
-
-
-
-
-
 """
 - Get the session ID from cookies.
 - Clear the session ID and associated token from Redis.
 - Also delete the session ID cookie from the user's browser.
 """
-# authRoute.get("/logout")
-# def logout_user():
-#     pass
+@authRoute.get("/logout")
+async def logout_user(request: Request):
+    cookies = request.cookies
+    session_id = cookies.get("session_id")
+
+    if not session_id:
+        # No session_id found, redirect anyway
+        return RedirectResponse(url=f"{FRONTEND_BASE_URL}")
+
+    session_data = await redis_client.get(f"sessionid:{session_id}") 
+
+    if session_data:
+        session_data = json.loads(session_data)
+        user_id = session_data.get("user_id")
+
+        # Delete session and user_session mapping
+        await redis_client.delete(f"sessionid:{session_id}")
+        await redis_client.delete(f"user_session:{user_id}")
+
+    # Clear session cookie and redirect
+    response = RedirectResponse(url=f"{FRONTEND_BASE_URL}")
+    response.delete_cookie(key="session_id")
+
+    return response
+
+
+    

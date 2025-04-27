@@ -63,6 +63,11 @@ async def store_session_in_redis(session_id: str, data: dict, ttl: str):
     expire_seconds = parse_ttl(ttl)
     json_data = json.dumps(data, ensure_ascii=False)  # safer encoding
     res = await redis_client.set(session_id, json_data, ex=expire_seconds)
+
+    if ttl == "7d":
+       user_id = data['user_id']
+       await redis_client.set(f"user_session:{user_id}", session_id, ex=expire_seconds)
+
     return res
 
 
@@ -82,6 +87,9 @@ async def get_session_data(session_id: str) -> dict:
     session_dict = json.loads(sessionData)
     return session_dict
 
+
+def remove_radissession_ifalreadyexists():
+    pass
 
 
 """
