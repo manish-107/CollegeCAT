@@ -1,8 +1,8 @@
-"""Added database model
+"""added databases
 
-Revision ID: 1be6ccdef703
+Revision ID: 2db862d2a458
 Revises: 
-Create Date: 2025-04-23 16:53:05.463280
+Create Date: 2025-04-28 11:12:51.314756
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '1be6ccdef703'
+revision: str = '2db862d2a458'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -25,22 +25,22 @@ def upgrade() -> None:
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('uname', sa.String(length=50), nullable=False),
     sa.Column('email', sa.String(length=255), nullable=False),
-    sa.Column('role', sa.Enum('HOD', 'Timetable_Coordinator', 'Lecturer', name='roleenum'), nullable=False),
+    sa.Column('role', sa.Enum('HOD', 'TIMETABLE_COORDINATOR', 'LECTURER', name='roleenum'), nullable=False),
     sa.Column('oauth_provider', sa.String(length=50), nullable=False),
     sa.Column('oauth_id', sa.String(length=100), nullable=False),
     sa.Column('joining_year', sa.Integer(), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('user_id'),
-    sa.UniqueConstraint('email'),
     sa.UniqueConstraint('oauth_id')
     )
+    op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
     op.create_table('academicyears',
     sa.Column('year_id', sa.Integer(), nullable=False),
     sa.Column('academic_year', sa.String(length=50), nullable=False),
     sa.Column('created_by', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['created_by'], ['users.user_id'], ),
+    sa.ForeignKeyConstraint(['created_by'], ['users.user_id'], ondelete='RESTRICT'),
     sa.PrimaryKeyConstraint('year_id')
     )
     op.create_table('batches',
@@ -50,8 +50,8 @@ def upgrade() -> None:
     sa.Column('noOfStudent', sa.Integer(), nullable=False),
     sa.Column('created_by', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['created_by'], ['users.user_id'], ),
-    sa.ForeignKeyConstraint(['year_id'], ['academicyears.year_id'], ),
+    sa.ForeignKeyConstraint(['created_by'], ['users.user_id'], ondelete='RESTRICT'),
+    sa.ForeignKeyConstraint(['year_id'], ['academicyears.year_id'], ondelete='RESTRICT'),
     sa.PrimaryKeyConstraint('batch_id')
     )
     op.create_table('subjects',
@@ -59,21 +59,21 @@ def upgrade() -> None:
     sa.Column('year_id', sa.Integer(), nullable=False),
     sa.Column('subject_name', sa.String(length=255), nullable=False),
     sa.Column('subject_code', sa.String(length=100), nullable=False),
-    sa.Column('subject_type', sa.Enum('core', 'elective', 'lab', name='subjecttypeenum'), nullable=False),
+    sa.Column('subject_type', sa.Enum('CORE', 'ELECTIVE', 'LAB', name='subjecttypeenum'), nullable=False),
     sa.Column('no_of_hours_required', sa.Integer(), nullable=False),
     sa.Column('created_by', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['created_by'], ['users.user_id'], ),
-    sa.ForeignKeyConstraint(['year_id'], ['academicyears.year_id'], ),
-    sa.PrimaryKeyConstraint('subject_id'),
-    sa.UniqueConstraint('subject_code')
+    sa.ForeignKeyConstraint(['created_by'], ['users.user_id'], ondelete='RESTRICT'),
+    sa.ForeignKeyConstraint(['year_id'], ['academicyears.year_id'], ondelete='RESTRICT'),
+    sa.PrimaryKeyConstraint('subject_id')
     )
+    op.create_index(op.f('ix_subjects_subject_code'), 'subjects', ['subject_code'], unique=True)
     op.create_table('workflowstatus',
     sa.Column('workflow_id', sa.Integer(), nullable=False),
     sa.Column('year_id', sa.Integer(), nullable=False),
     sa.Column('workflow_step', sa.Enum('STEP_1_CREATE_YEAR_AND_BATCH', 'STEP_2_SUBJECT_MANAGEMENT', 'STEP_3_SUBJECT_PRIORITY_FORM', 'STEP_4_PRIORITY_SELECTION', 'STEP_5_AUTO_SUBJECT_ASSIGNMENT_AND_SEND_TO_HOD', 'STEP_6_HOD_REVIEW_AND_APPROVAL', 'STEP_7_FINALIZE_SUBJECT_ALLOCATION', 'STEP_8_TIMETABLE_CREATION', 'STEP_9_TIMETABLE_FORMAT_REVIEW_AND_FINALIZE', 'STEP_10_AUTOGENERATE_TIMETABLE_AND_SEND_TO_HOD', 'STEP_11_HOD_EDIT_AND_UPDATE_TIMETABLE', 'STEP_12_TIMETABLE_FINALIZATION', name='workflowstageenum'), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['year_id'], ['academicyears.year_id'], ),
+    sa.ForeignKeyConstraint(['year_id'], ['academicyears.year_id'], ondelete='RESTRICT'),
     sa.PrimaryKeyConstraint('workflow_id'),
     sa.UniqueConstraint('year_id', name='uq_year_workflow')
     )
@@ -84,9 +84,9 @@ def upgrade() -> None:
     sa.Column('year_id', sa.Integer(), nullable=False),
     sa.Column('priority', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['lecturer_id'], ['users.user_id'], ),
-    sa.ForeignKeyConstraint(['selected_sub_id'], ['subjects.subject_id'], ),
-    sa.ForeignKeyConstraint(['year_id'], ['academicyears.year_id'], ),
+    sa.ForeignKeyConstraint(['lecturer_id'], ['users.user_id'], ondelete='RESTRICT'),
+    sa.ForeignKeyConstraint(['selected_sub_id'], ['subjects.subject_id'], ondelete='RESTRICT'),
+    sa.ForeignKeyConstraint(['year_id'], ['academicyears.year_id'], ondelete='RESTRICT'),
     sa.PrimaryKeyConstraint('preference_id'),
     sa.UniqueConstraint('lecturer_id', 'selected_sub_id', 'year_id', name='uq_preference')
     )
@@ -97,14 +97,14 @@ def upgrade() -> None:
     sa.Column('batch_id', sa.Integer(), nullable=False),
     sa.Column('academic_year_id', sa.Integer(), nullable=False),
     sa.Column('assigned_by', sa.Integer(), nullable=False),
-    sa.Column('status', sa.Enum('Pending', 'Approved', 'Rejected', name='approvalstatusenum'), nullable=True),
+    sa.Column('status', sa.Enum('PENDING', 'APPROVED', 'REJECTED', name='approvalstatusenum'), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['academic_year_id'], ['academicyears.year_id'], ),
-    sa.ForeignKeyConstraint(['assigned_by'], ['users.user_id'], ),
-    sa.ForeignKeyConstraint(['batch_id'], ['batches.batch_id'], ),
-    sa.ForeignKeyConstraint(['lecturer_id'], ['users.user_id'], ),
-    sa.ForeignKeyConstraint(['subject_id'], ['subjects.subject_id'], ),
+    sa.ForeignKeyConstraint(['academic_year_id'], ['academicyears.year_id'], ondelete='RESTRICT'),
+    sa.ForeignKeyConstraint(['assigned_by'], ['users.user_id'], ondelete='RESTRICT'),
+    sa.ForeignKeyConstraint(['batch_id'], ['batches.batch_id'], ondelete='RESTRICT'),
+    sa.ForeignKeyConstraint(['lecturer_id'], ['users.user_id'], ondelete='RESTRICT'),
+    sa.ForeignKeyConstraint(['subject_id'], ['subjects.subject_id'], ondelete='RESTRICT'),
     sa.PrimaryKeyConstraint('assignment_id')
     )
     op.create_table('timetablehourformats',
@@ -113,8 +113,8 @@ def upgrade() -> None:
     sa.Column('format_data', sa.JSON(), nullable=False),
     sa.Column('created_by', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['batch_id'], ['batches.batch_id'], ),
-    sa.ForeignKeyConstraint(['created_by'], ['users.user_id'], ),
+    sa.ForeignKeyConstraint(['batch_id'], ['batches.batch_id'], ondelete='RESTRICT'),
+    sa.ForeignKeyConstraint(['created_by'], ['users.user_id'], ondelete='RESTRICT'),
     sa.PrimaryKeyConstraint('format_id')
     )
     op.create_table('timetable',
@@ -127,11 +127,11 @@ def upgrade() -> None:
     sa.Column('lecturer_id', sa.Integer(), nullable=False),
     sa.Column('created_by', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['batch_id'], ['batches.batch_id'], ),
-    sa.ForeignKeyConstraint(['created_by'], ['users.user_id'], ),
-    sa.ForeignKeyConstraint(['format_id'], ['timetablehourformats.format_id'], ),
-    sa.ForeignKeyConstraint(['lecturer_id'], ['users.user_id'], ),
-    sa.ForeignKeyConstraint(['subject_id'], ['subjects.subject_id'], ),
+    sa.ForeignKeyConstraint(['batch_id'], ['batches.batch_id'], ondelete='RESTRICT'),
+    sa.ForeignKeyConstraint(['created_by'], ['users.user_id'], ondelete='RESTRICT'),
+    sa.ForeignKeyConstraint(['format_id'], ['timetablehourformats.format_id'], ondelete='RESTRICT'),
+    sa.ForeignKeyConstraint(['lecturer_id'], ['users.user_id'], ondelete='RESTRICT'),
+    sa.ForeignKeyConstraint(['subject_id'], ['subjects.subject_id'], ondelete='RESTRICT'),
     sa.PrimaryKeyConstraint('timetable_id'),
     sa.UniqueConstraint('batch_id', 'day', 'time_slot', name='uq_batch_day_slot')
     )
@@ -146,8 +146,10 @@ def downgrade() -> None:
     op.drop_table('lecturersubassignments')
     op.drop_table('lecturerpreferences')
     op.drop_table('workflowstatus')
+    op.drop_index(op.f('ix_subjects_subject_code'), table_name='subjects')
     op.drop_table('subjects')
     op.drop_table('batches')
     op.drop_table('academicyears')
+    op.drop_index(op.f('ix_users_email'), table_name='users')
     op.drop_table('users')
     # ### end Alembic commands ###

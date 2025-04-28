@@ -211,15 +211,18 @@ async def complete_signup(signupData: signupData, request: Request, db: Session 
     # Store new session
     await store_session_in_redis(session_id=f"sessionid:{new_session_id}", data=new_session_data, ttl=expire_seconds)
 
-    # Prepare response
-    response = RedirectResponse(url=f"{FRONTEND_BASE_URL}/dashboard")
-    response.delete_cookie(key="session_id")  # delete old cookie
-    response.set_cookie(key="session_id", value=new_session_id, httponly=True, secure=True)
+    response = JSONResponse({"redirect_to": f"{FRONTEND_BASE_URL}/dashboard"})
+
+    # Set cookie properly
+    response.set_cookie(
+        key="session_id",
+        value=new_session_id,
+        httponly=True,
+        secure=False,         # set False for localhost (True for production HTTPS)
+        samesite="None",       # Important for cross-origin
+    )
 
     return response
-
-
-
 """
 - Get the session ID from cookies.
 - Clear the session ID and associated token from Redis.

@@ -11,18 +11,18 @@ metadata = Base.metadata
 # Enums
 class RoleEnum(enum.Enum):
     HOD = "HOD"
-    Timetable_Coordinator = "Timetable Coordinator"
-    Lecturer = "Lecturer"
+    TIMETABLE_COORDINATOR = "TIMETABLE_COORDINATOR"
+    LECTURER = "LECTURER"
 
 class SubjectTypeEnum(enum.Enum):
-    core = "core"
-    elective = "elective"
-    lab = "lab"
+    CORE = "CORE"
+    ELECTIVE = "ELECTIVE"
+    LAB = "LAB"
 
 class ApprovalStatusEnum(enum.Enum):
-    Pending = "Pending"
-    Approved = "Approved"
-    Rejected = "Rejected"
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
 
 class WorkflowStageEnum(enum.Enum):
     STEP_1_CREATE_YEAR_AND_BATCH = 1
@@ -153,7 +153,7 @@ class LecturerSubAssignments(Base):
     batch_id = Column(Integer, ForeignKey("batches.batch_id", ondelete="RESTRICT"), nullable=False)
     academic_year_id = Column(Integer, ForeignKey("academicyears.year_id", ondelete="RESTRICT"), nullable=False)
     assigned_by = Column(Integer, ForeignKey("users.user_id", ondelete="RESTRICT"), nullable=False)
-    status = Column(Enum(ApprovalStatusEnum), default=ApprovalStatusEnum.Pending)
+    status = Column(Enum(ApprovalStatusEnum), default=ApprovalStatusEnum.PENDING)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 

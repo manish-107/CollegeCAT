@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import { useRouter } from "next/navigation";  // Added
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +19,7 @@ const RegistrationForm = () => {
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
   const [year, setYear] = useState('');
+  const router = useRouter();  // Added
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,15 +44,16 @@ const RegistrationForm = () => {
         withCredentials: true,
       });
 
-      console.log(response)
-
       toast.success("Registration successful!");
       setName('');
       setRole('');
       setYear('');
 
-      // Optionally, redirect to dashboard
-      // window.location.href = "/dashboard";
+      // ✅ Redirect after success
+      const redirectUrl = response.data.redirect_to;
+      if (redirectUrl) {
+        router.push(redirectUrl);
+      }
 
     } catch (error: any) {
       console.error(error);
@@ -87,11 +90,10 @@ const RegistrationForm = () => {
               <SelectValue placeholder="Select role" />
             </SelectTrigger>
             <SelectContent className="dark:bg-black dark:border-neutral-800">
-              <SelectItem value="Timetable Coordinator">Timetable Coordinator</SelectItem>
-              <SelectItem value="Lecturer">Lecturer</SelectItem>
+              <SelectItem value="TIMETABLE_COORDINATOR">Timetable Coordinator</SelectItem>
+              <SelectItem value="LECTURER">Lecturer</SelectItem>
               <SelectItem value="HOD">HOD</SelectItem>
             </SelectContent>
-
           </Select>
         </div>
 

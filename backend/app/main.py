@@ -8,12 +8,11 @@ app = FastAPI(title="Course Selection and Timetable System")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3001"], 
+    allow_origins=["http://localhost:3001"],  # Frontend's origin
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Ensure OPTIONS is allowed
+    allow_headers=["*"],  # Allow all headers
 )
-
 
 app.include_router(authRoute,prefix="/api/auth",tags=["Auth"])
 
