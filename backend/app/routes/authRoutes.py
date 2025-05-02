@@ -182,9 +182,9 @@ async def complete_signup(signupData: signupData, request: Request, db: Session 
     inserted_user = insert_userDetails(
         db=db,
         userDetails=signupData,
-        email=sessionData.get("email"),
+        email=sessionData.get("email") or "",
         oauth_provider="google",
-        oauth_id=sessionData.get("oauth_id")
+        oauth_id=sessionData.get("oauth_id") or ""
     )
 
     if not inserted_user:
@@ -219,7 +219,7 @@ async def complete_signup(signupData: signupData, request: Request, db: Session 
         value=new_session_id,
         httponly=True,
         secure=False,         # set False for localhost (True for production HTTPS)
-        samesite="None",       # Important for cross-origin
+        samesite="none",       # Important for cross-origin
     )
 
     return response

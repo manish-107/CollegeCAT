@@ -98,7 +98,7 @@ def remove_radissession_ifalreadyexists():
 3. Update the access token + expiry in Redis
 """
 def refresh_access_token(session_id: str) -> str:
-    pass
+    return "hello"
 
 
 """
@@ -106,7 +106,7 @@ Check if the access token is expired based on stored expiry time
 Return True if expired, False otherwise
 """
 def is_token_expired(session_data: dict) -> bool:
-    pass
+    return False
 
 
 
@@ -120,8 +120,8 @@ def delete_session(session_id: str):
 """
 Utility: convert `expires_in` to actual datetime for Redis storage
 """
-def calculate_expiry_time(seconds: int) -> datetime:
-    pass
+# def calculate_expiry_time(seconds: int) -> datetime:
+#     pass
 
 """
 Set session ID in browser cookie
