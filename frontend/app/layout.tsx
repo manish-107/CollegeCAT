@@ -37,7 +37,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {/* Global dark/light toggle */}
-          <div className="top-4 right-4 z-50 fixed">
+          <div className="top-3 right-4 z-50 fixed">
             <ModeToggle />
           </div>
           {/* Page content */}
