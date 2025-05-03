@@ -7,6 +7,7 @@ __pycache__/
 *.bak
 *.log
 app/__pycache__/ 
+.mypy_cache
 
 .env
 /backend.egg-info
