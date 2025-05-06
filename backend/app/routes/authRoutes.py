@@ -3,12 +3,12 @@ from fastapi.responses import JSONResponse,RedirectResponse
 from datetime import datetime, timedelta,timezone
 import httpx
 import json
-from app.config import GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,REDIRECT_URI
+from backend.app.config.config import GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,REDIRECT_URI
 from app.db.postgres_client import get_db
 from app.db.radis_client import redis_client
 from sqlalchemy.orm import Session
 from app.schemas.user_schema import signupData
-from app.config import FRONTEND_BASE_URL
+from backend.app.config.config import FRONTEND_BASE_URL
 from app.services.user_service import get_userby_email,insert_userDetails
 from app.services.auth_services import get_userDetails_from_google,generate_session_id,store_session_in_redis,get_session_data
 
@@ -182,9 +182,9 @@ async def complete_signup(signupData: signupData, request: Request, db: Session 
     inserted_user = insert_userDetails(
         db=db,
         userDetails=signupData,
-        email=sessionData.get("email"),
+        email=sessionData.get("email") or "",
         oauth_provider="google",
-        oauth_id=sessionData.get("oauth_id")
+        oauth_id=sessionData.get("oauth_id") or ""
     )
 
     if not inserted_user:
@@ -219,7 +219,7 @@ async def complete_signup(signupData: signupData, request: Request, db: Session 
         value=new_session_id,
         httponly=True,
         secure=False,         # set False for localhost (True for production HTTPS)
-        samesite="None",       # Important for cross-origin
+        samesite="none",       # Important for cross-origin
     )
 
     return response

@@ -20,19 +20,3 @@ app.include_router(authRoute,prefix="/api/auth",tags=["Auth"])
 def say_hello():
     return {"msg":"hello"}
 
-class KeyValue(BaseModel):
-    key:str
-    value:str
-
-@app.post("/radis")
-async def set_radis(data:KeyValue):
-    await redis_client.set(data.key,data.value)
-    return {"msg": f"Data inserted: {data.key} = {data.value}"}
-
-@app.get("/radis")
-async def get_redis(key: str):
-    value = await redis_client.get(key)
-    if value is None:
-        return {"msg": f"No data found for key: {key}"}
-    return {"data": value}
-
