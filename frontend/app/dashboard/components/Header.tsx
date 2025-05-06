@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Search, Bell, ChevronLeft, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import NotificationDropdown from '@/app/dashboard/components/NotificationDropdown'; // Adjust path as needed
 
 interface HeaderProps {
   onToggleSidebar: () => void;
@@ -10,8 +11,14 @@ interface HeaderProps {
 }
 
 const Header = ({ onToggleSidebar, sidebarOpen }: HeaderProps) => {
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+
+  const toggleNotifications = () => {
+    setNotificationsOpen(!notificationsOpen);
+  };
+
   return (
-    <div className="flex flex-col justify-between bg-sidebar text-[var(--sidebar-foreground)] border-b border-border">
+    <div className="relative flex flex-col justify-between bg-sidebar text-[var(--sidebar-foreground)] border-b border-border">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center">
           <Button
@@ -39,9 +46,14 @@ const Header = ({ onToggleSidebar, sidebarOpen }: HeaderProps) => {
 
         <div className="flex items-center w-auto gap-6 mr-12">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="rounded-full relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full relative"
+              onClick={toggleNotifications}
+            >
               <Bell size={18} />
-              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500"></span>
+              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500" />
             </Button>
 
             <div className="h-8 w-8 rounded-full overflow-hidden border border-border">
@@ -49,7 +61,10 @@ const Header = ({ onToggleSidebar, sidebarOpen }: HeaderProps) => {
             </div>
           </div>
         </div>
-      </div>
+      </div>       
+
+      {/* Notification Dropdown */}
+      <NotificationDropdown open={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
     </div>
   );
 };

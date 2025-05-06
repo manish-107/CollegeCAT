@@ -1,14 +1,12 @@
-'use client';
-
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { ChevronDown, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface SidebarProps {
-  currentStep: number; 
+  currentStep: number;
+  onStepClick: (stepIndex: number) => void; // Added callback to handle step click
 }
-
 
 const steps = [
   'Create Year and Batch',
@@ -25,7 +23,6 @@ const steps = [
   'Final Timetable Confirmation',
 ];
 
-
 const stepPaths = [
   '1-create-year',
   '2-manage-subjects',
@@ -41,7 +38,7 @@ const stepPaths = [
   '12-finalize-timetable',
 ];
 
-const Sidebar = ({ currentStep }: SidebarProps) => {
+const Sidebar = ({ currentStep, onStepClick }: SidebarProps) => {
   const [stepsOpen, setStepsOpen] = useState(true);
 
   return (
@@ -72,8 +69,9 @@ const Sidebar = ({ currentStep }: SidebarProps) => {
             <div className="mt-1 pl-2 space-y-1">
               {steps.map((step, index) => (
                 <div key={`step-${index}`} className="mb-1">
-                  <Link href={`/dashboard/steps/${stepPaths[index]}`}>
+                  <Link href={`/dashboard/steps/${stepPaths[index]}`} passHref>
                     <div
+                      onClick={() => onStepClick(index + 1)} // Call onStepClick on click
                       className={`flex items-center px-2 py-1.5 text-sm rounded-md hover:bg-[var(--sidebar-accent)] group ${
                         currentStep === index + 1 ? 'bg-[var(--sidebar-accent)] font-semibold' : ''
                       }`}
