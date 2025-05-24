@@ -1,14 +1,14 @@
-from fastapi import APIRouter,Request,Depends
+from fastapi import APIRouter,Request,Depends,Response
 from fastapi.responses import JSONResponse,RedirectResponse
 from datetime import datetime, timedelta,timezone
 import httpx
 import json
-from backend.app.config.config import GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,REDIRECT_URI
+from app.config.config import GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,REDIRECT_URI
 from app.db.postgres_client import get_db
 from app.db.radis_client import redis_client
 from sqlalchemy.orm import Session
 from app.schemas.user_schema import signupData
-from backend.app.config.config import FRONTEND_BASE_URL
+from app.config.config import FRONTEND_BASE_URL
 from app.services.user_service import get_userby_email,insert_userDetails
 from app.services.auth_services import get_userDetails_from_google,generate_session_id,store_session_in_redis,get_session_data
 
@@ -41,7 +41,7 @@ authRoute = APIRouter()
     For long-lived sessions, store the refresh token securely.
 """
 
-@authRoute.get("/callback")
+@authRoute.get("/callback",response_class=RedirectResponse)
 async def signin_redirect(request: Request, db: Session = Depends(get_db)):
     code = request.query_params.get("code")
 
@@ -145,7 +145,7 @@ async def signin_redirect(request: Request, db: Session = Depends(get_db)):
             return RedirectResponse(url=f"{FRONTEND_BASE_URL}/?error=session_store_failed")
         
         # User does not exist, redirect to signup page
-        response = RedirectResponse(url=f"{FRONTEND_BASE_URL}/signup")
+        response = RedirectResponse(url=f"{FRONTEND_BASE_URL}/signup",status_code="404")
         response.set_cookie(key="session_id", value=sessionid, httponly=True, secure=True)
         return response
          
@@ -253,5 +253,5 @@ async def logout_user(request: Request):
 
     return response
 
-
+   
     

@@ -7,6 +7,8 @@ __pycache__/
 *.bak
 *.log
 app/__pycache__/ 
+
+app/routes/__pycache__
 .mypy_cache
 
 .env
