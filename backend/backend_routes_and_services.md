@@ -196,3 +196,9 @@ This file outlines the possible **FastAPI routes** and associated **service clas
 - `create_log(entry: dict) -> None`
 - `get_logs(year_id: UUID = None) -> List[LogEntry]`
 """
+
+
+
+To run : fastapi run app/main.py --port 3000
+
+redis:6379

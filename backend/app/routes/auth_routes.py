@@ -75,7 +75,6 @@ async def signin_redirect(request: Request, db: Session = Depends(get_db)):
 
     userData = await get_userDetails_from_google(access_token)
 
-    print(userData.get("id"))
 
     if "error" in userData or "email" not in userData:
         return RedirectResponse(url=f"{FRONTEND_BASE_URL}/?error=user_info_fetch_failed")
@@ -145,7 +144,7 @@ async def signin_redirect(request: Request, db: Session = Depends(get_db)):
             return RedirectResponse(url=f"{FRONTEND_BASE_URL}/?error=session_store_failed")
         
         # User does not exist, redirect to signup page
-        response = RedirectResponse(url=f"{FRONTEND_BASE_URL}/signup",status_code="404")
+        response = RedirectResponse(url=f"{FRONTEND_BASE_URL}/signup")
         response.set_cookie(key="session_id", value=sessionid, httponly=True, secure=True)
         return response
          
