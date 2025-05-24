@@ -2,7 +2,7 @@ from fastapi import FastAPI,Request
 from app.routes.auth_routes import authRoute
 from fastapi.middleware.cors import CORSMiddleware
 from scalar_fastapi import get_scalar_api_reference
-from app.routes.user_routes import userRoute
+from app.routes.user_routes import user_router
 from app.core.global_exception_handler import GlobalExceptionHandler
 
 
@@ -29,7 +29,7 @@ async def scalar_html():
     )
 
 app.include_router(authRoute,prefix="/api/auth",tags=["Auth"])
-app.include_router(userRoute,prefix="/api/users",tags=["Users"])
+app.include_router(user_router,prefix="/api/users",tags=["Users"])
 
 @app.get("/")
 def say_hello():
