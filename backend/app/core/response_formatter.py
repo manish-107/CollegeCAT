@@ -3,24 +3,24 @@ from typing import Any, Optional
 
 class ResponseFormatter:
     @staticmethod
-    def success(data: Any = None, message: Optional[str] = None, status_code: int = 200):
+    def success(data: Any = None, message: Optional[str] = "Success", status_code: int = 200):
         return JSONResponse(
             status_code=status_code,
             content={
                 "data": data,
-                "message":message,
+                "message": message,
                 "error": None,
                 "success": True
             }
         )
 
     @staticmethod
-    def failure(error: list[str] | str,message: Optional[str] = None, status_code: int = 400):
+    def failure(error: str | list[str], message: Optional[str] = "Failed", status_code: int = 400):
         return JSONResponse(
             status_code=status_code,
             content={
                 "data": None,
-                "message":message,
+                "message": message,
                 "error": error if isinstance(error, list) else [error],
                 "success": False
             }
