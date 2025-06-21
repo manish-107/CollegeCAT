@@ -1,15 +1,16 @@
 from fastapi import APIRouter, Request, Depends
-from app.middlewares.auth_middleware import auth_dependency
 from app.core.response_formatter import ResponseFormatter
 from app.services.user_service import UserService
-from app.repository.user_repository import UserRepository
+from app.repositories.user_repository import UserRepository
 from app.db.postgres_client import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.user_schema import UpdateUserData, UserResponse
 from starlette.exceptions import HTTPException
 
 
-user_router = APIRouter(dependencies=[Depends(auth_dependency)])
+# user_router = APIRouter(dependencies=[Depends(auth_dependency)])
+user_router = APIRouter()
+
 # dependencies=[Depends(auth_dependency)]
 """
 get sessionid from cookie 
@@ -22,7 +23,7 @@ async def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
     """Dependency to get UserService instance."""
     repository = UserRepository(db)
     return UserService(repository)
-
+    
 
 @user_router.get("/me")
 async def get_current_user(request: Request):
@@ -56,6 +57,14 @@ async def get_by_user_email(
 
 @user_router.put("/update")
 async def update_user_details(id:int,user_data:UpdateUserData,service: UserService = Depends(get_user_service)):
-    
-    return await service.update_user(id=id,**user_data.model_dump(exclude_unset=True))
+    try:
+        return await service.update_user(id=id,**user_data.model_dump(exclude_unset=True))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
+@user_router.delete("/delete")
+async def delete_user(id:int,service: UserService = Depends(get_user_service)):
+    try:
+        return await service.delete_user(id=id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

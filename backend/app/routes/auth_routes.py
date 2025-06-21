@@ -16,7 +16,7 @@ from app.services.auth_services import (
     get_session_data,
 )
 from app.services.user_service import UserService
-from app.repository.user_repository import UserRepository
+from app.repositories.user_repository import UserRepository
 
 authRoute = APIRouter()
 
@@ -78,7 +78,7 @@ async def signin_redirect(
                 },
             )
             response.raise_for_status()
-        except httpx.RequestError as e:
+        except httpx.RequestError:
             return RedirectResponse(
                 url=f"{FRONTEND_BASE_URL}/?error=token_exchange_failed"
             )
@@ -136,12 +136,12 @@ async def signin_redirect(
         )
 
         # Redirect to dashboard and set cookie
-        response = RedirectResponse(url=f"{FRONTEND_BASE_URL}/dashboard")
+        redirect_response: RedirectResponse = RedirectResponse(url=f"{FRONTEND_BASE_URL}/dashboard")
 
-        response.set_cookie(
+        redirect_response.set_cookie(
             key="session_id", value=sessionid, httponly=True, secure=True
         )
-        return response
+        return redirect_response
 
     else:
         sessionid = generate_session_id()
@@ -175,11 +175,11 @@ async def signin_redirect(
             )
 
         # User does not exist, redirect to signup page
-        response = RedirectResponse(url=f"{FRONTEND_BASE_URL}/signup")
-        response.set_cookie(
+        signup_redirect: RedirectResponse = RedirectResponse(url=f"{FRONTEND_BASE_URL}/signup")
+        signup_redirect.set_cookie(
             key="session_id", value=sessionid, httponly=True, secure=True
         )
-        return response
+        return signup_redirect
 
 
 """
@@ -221,7 +221,9 @@ async def complete_signup(
 
     # Insert user into the database
     inserted_user = await service.create_user(
-        userDetails=signupData,
+        uname=signupData.uname,
+        role=signupData.role,
+        joining_year=signupData.joining_year,
         email=sessionData.get("email") or "",
         oauth_provider="google",
         oauth_id=sessionData.get("oauth_id") or "",

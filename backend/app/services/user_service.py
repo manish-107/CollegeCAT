@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.models.model import Users as UserModel
 from app.schemas.user_schema import UserResponse, signupData as userDetails
 from app.core.service_base import BaseService
-from app.repository.user_repository import UserRepository
+from app.repositories.user_repository import UserRepository
 from app.core.exceptions import NotFoundException
 from app.core.response_formatter import ResponseFormatter
 
@@ -44,4 +44,9 @@ class UserService(BaseService):
         }
         
         return ResponseFormatter.success(data=data, message="User updated successfully")
-                                             
+    
+    async def delete_user(self,id:int):
+        try:
+            return await self._repository.delete(id=id)
+        except Exception as e:
+            raise RuntimeError(f"Error deleting user: {str(e)}")

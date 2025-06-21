@@ -66,15 +66,6 @@ class Users(BaseClass):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
 
-    created_academic_years: Mapped[list["AcademicYears"]] = relationship(
-        "AcademicYears", back_populates="creator"
-    )
-    created_batches: Mapped[list["Batches"]] = relationship(
-        "Batches", back_populates="creator"
-    )
-    created_subjects: Mapped[list["Subjects"]] = relationship(
-        "Subjects", back_populates="creator"
-    )
     preferences: Mapped[list["LecturerPreferences"]] = relationship(
         "LecturerPreferences", back_populates="lecturer"
     )
@@ -83,12 +74,6 @@ class Users(BaseClass):
     )
     assignments_received: Mapped[list["LecturerSubAssignments"]] = relationship(
         "LecturerSubAssignments", foreign_keys="LecturerSubAssignments.lecturer_id"
-    )
-    created_formats: Mapped[list["TimetableHourFormats"]] = relationship(
-        "TimetableHourFormats", back_populates="creator"
-    )
-    created_timetables: Mapped[list["Timetable"]] = relationship(
-        "Timetable", back_populates="creator", foreign_keys="Timetable.created_by"
     )
 
     def __repr__(self):
@@ -99,15 +84,9 @@ class AcademicYears(BaseClass):
     __tablename__ = "academicyears"
 
     year_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    academic_year: Mapped[str] = mapped_column(String(50), nullable=False)
-    created_by: Mapped[int] = mapped_column(
-        Integer, ForeignKey("users.user_id", ondelete="RESTRICT"), nullable=False
-    )
+    academic_year: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
     created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
 
-    creator: Mapped["Users"] = relationship(
-        "Users", back_populates="created_academic_years"
-    )
     batches: Mapped[list["Batches"]] = relationship(
         "Batches", back_populates="year", cascade="all, delete"
     )
@@ -136,15 +115,11 @@ class Batches(BaseClass):
     )
     section: Mapped[str] = mapped_column(String(10), nullable=False)
     noOfStudent: Mapped[int] = mapped_column(Integer, nullable=False)
-    created_by: Mapped[int] = mapped_column(
-        Integer, ForeignKey("users.user_id", ondelete="RESTRICT"), nullable=False
-    )
     created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
 
     year: Mapped["AcademicYears"] = relationship(
         "AcademicYears", back_populates="batches"
     )
-    creator: Mapped["Users"] = relationship("Users", back_populates="created_batches")
     assignments: Mapped[list["LecturerSubAssignments"]] = relationship(
         "LecturerSubAssignments", back_populates="batch", cascade="all, delete"
     )
@@ -153,6 +128,10 @@ class Batches(BaseClass):
     )
     timetables: Mapped[list["Timetable"]] = relationship(
         "Timetable", back_populates="batch", cascade="all, delete"
+    )
+
+    __table_args__ = (
+        UniqueConstraint('year_id', 'section', name='uq_year_section'),
     )
 
     def __repr__(self):
@@ -176,15 +155,11 @@ class Subjects(BaseClass):
         Enum(SubjectTypeEnum), nullable=False
     )
     no_of_hours_required: Mapped[int] = mapped_column(Integer, nullable=False)
-    created_by: Mapped[int] = mapped_column(
-        Integer, ForeignKey("users.user_id", ondelete="RESTRICT"), nullable=False
-    )
     created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
 
     year: Mapped["AcademicYears"] = relationship(
         "AcademicYears", back_populates="subjects"
     )
-    creator: Mapped["Users"] = relationship("Users", back_populates="created_subjects")
     preferences: Mapped[list["LecturerPreferences"]] = relationship(
         "LecturerPreferences", back_populates="subject", cascade="all, delete"
     )
@@ -283,13 +258,9 @@ class TimetableHourFormats(BaseClass):
         Integer, ForeignKey("batches.batch_id", ondelete="RESTRICT"), nullable=False
     )
     format_name: Mapped[str] = mapped_column(String(50), nullable=False)
-    created_by: Mapped[int] = mapped_column(
-        Integer, ForeignKey("users.user_id", ondelete="RESTRICT"), nullable=False
-    )
     created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
 
     batch: Mapped["Batches"] = relationship("Batches", back_populates="formats")
-    creator: Mapped["Users"] = relationship("Users", back_populates="created_formats")
     timetables: Mapped[list["Timetable"]] = relationship(
         "Timetable", back_populates="format", cascade="all, delete"
     )
@@ -313,9 +284,6 @@ class Timetable(BaseClass):
         ForeignKey("timetablehourformats.format_id", ondelete="RESTRICT"),
         nullable=False,
     )
-    created_by: Mapped[int] = mapped_column(
-        Integer, ForeignKey("users.user_id", ondelete="RESTRICT"), nullable=False
-    )
     timetable_data: Mapped[JSON] = mapped_column(JSON, nullable=False)
     created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
 
@@ -323,9 +291,6 @@ class Timetable(BaseClass):
     subject: Mapped["Subjects"] = relationship("Subjects", back_populates="timetables")
     format: Mapped["TimetableHourFormats"] = relationship(
         "TimetableHourFormats", back_populates="timetables"
-    )
-    creator: Mapped["Users"] = relationship(
-        "Users", back_populates="created_timetables"
     )
     approvals: Mapped[list["Approvals"]] = relationship(
         "Approvals", back_populates="timetable", cascade="all, delete"
@@ -358,32 +323,60 @@ class Approvals(BaseClass):
     timetable: Mapped["Timetable"] = relationship(
         "Timetable", back_populates="approvals"
     )
-    approver: Mapped["Users"] = relationship("Users", back_populates="approvals")
 
     def __repr__(self):
         return f"<Approval(id={self.approval_id}, timetable_id={self.timetable_id}, status='{self.approval_status.name}', stage='{self.approval_stage.name}')>"
 
 
-class Logs(BaseClass):
-    __tablename__ = "logs"
+class LecturerSubjectPriority(BaseClass):
+    __tablename__ = "lecturer_subject_priorities"
 
-    log_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    lecturer_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.user_id", ondelete="RESTRICT"), nullable=False
     )
-    action: Mapped[str] = mapped_column(String(255), nullable=False)
+    subject_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("subjects.subject_id", ondelete="RESTRICT"), nullable=False
+    )
+    batch_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("batches.batch_id", ondelete="RESTRICT"), nullable=True
+    )
+    year_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("academicyears.year_id", ondelete="RESTRICT"), nullable=False
+    )
+    priority: Mapped[int] = mapped_column(Integer, nullable=False)  # 1 to 5
     created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
 
-    user: Mapped["Users"] = relationship("Users", back_populates="logs")
+    __table_args__ = (
+        UniqueConstraint("lecturer_id", "subject_id", "batch_id", "year_id", name="unique_lecturer_subject_batch_priority"),
+    )
 
     def __repr__(self):
-        return (
-            f"<Log(id={self.log_id}, user_id={self.user_id}, action='{self.action}')>"
-        )
+        return f"<LecturerSubjectPriority(id={self.id}, lecturer_id={self.lecturer_id}, subject_id={self.subject_id}, batch_id={self.batch_id}, priority={self.priority})>"
 
 
-# Relationships and other parts of the schema
-Users.logs = relationship("Logs", back_populates="user", cascade="all, delete")
-Users.approvals = relationship(
-    "Approvals", back_populates="approver", cascade="all, delete"
-)
+class LecturerSubjectAllocation(BaseClass):
+    __tablename__ = "lecturer_subject_allocations"
+
+    allocation_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    lecturer_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.user_id", ondelete="RESTRICT"), nullable=False
+    )
+    subject_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("subjects.subject_id", ondelete="RESTRICT"), nullable=False
+    )
+    batch_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("batches.batch_id", ondelete="RESTRICT"), nullable=False
+    )
+    year_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("academicyears.year_id", ondelete="RESTRICT"), nullable=False
+    )
+    allocated_priority: Mapped[int] = mapped_column(Integer, nullable=False)  # The priority that was allocated
+    created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("subject_id", "batch_id", "year_id", name="unique_subject_batch_year_allocation"),
+    )
+
+    def __repr__(self):
+        return f"<LecturerSubjectAllocation(allocation_id={self.allocation_id}, lecturer_id={self.lecturer_id}, subject_id={self.subject_id}, batch_id={self.batch_id}, year_id={self.year_id})>"
