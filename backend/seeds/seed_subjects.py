@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.models.model import Subjects, AcademicYears, SubjectTypeEnum
 from app.db.postgres_client import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 async def seed_subjects():
     """Seed subjects data"""
@@ -176,6 +176,12 @@ async def seed_subjects():
             print(f"Total subjects created: {len(subjects_data)}")
             print("Year 2024-2025: 4 Core + 2 Elective + 2 Lab = 8 subjects")
             print("Year 2025-2026: 4 Core + 2 Elective + 2 Lab = 8 subjects")
+            
+            # Reset the sequence after seeding
+            print("🔄 Resetting subjects sequence...")
+            await db.execute(text("SELECT setval('subjects_subject_id_seq', (SELECT MAX(subject_id) FROM subjects));"))
+            await db.commit()
+            print("✅ Subjects sequence reset successfully!")
             
         except Exception as e:
             await db.rollback()

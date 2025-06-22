@@ -11,6 +11,8 @@ This folder contains seed files to populate the database with initial data for t
 - `seed_lecturer_subject_priorities.py` - Creates priorities for 3 lecturers (10 priorities each)
 - `run_all_seeds.py` - Runs all seed files in the correct order
 - `cleanup_database.py` - Removes all seeded data from the database
+- `sequence_utils.py` - Utility functions for resetting database sequences
+- `reset_sequences.py` - Standalone script to reset all sequences
 - `README.md` - This documentation file
 
 ## 🚀 Usage
@@ -31,6 +33,15 @@ python seed_users.py
 python seed_lecturer_subject_priorities.py
 ```
 
+### Reset Sequences (Fix ID Conflicts)
+```bash
+# Reset all sequences to prevent ID conflicts
+python reset_sequences.py
+
+# Or run the utility directly
+python -c "import asyncio; from sequence_utils import reset_all_sequences; asyncio.run(reset_all_sequences())"
+```
+
 ### Clean Up Database
 ```bash
 # Full cleanup (all tables)
@@ -39,6 +50,39 @@ python cleanup_database.py
 # Selective cleanup (main seeded tables only)
 python cleanup_database.py --selective
 ```
+
+## 🔄 Sequence Management
+
+### What are Sequences?
+PostgreSQL uses **sequences** to auto-generate IDs for tables with auto-incrementing primary keys. When you insert data with explicit IDs (like in seed files), the sequence doesn't automatically update to know about the highest existing ID.
+
+### The Problem
+If you have existing data with IDs 1, 2, 3, 4, 5, but the sequence is still at 1, the next insert will try to use ID 1 again, causing a **unique constraint violation**.
+
+### The Solution
+Each seed file now automatically resets its sequence after seeding data. Additionally, you can manually reset all sequences using the provided tools.
+
+### Automatic Sequence Reset
+Every seed file now includes:
+```python
+# Reset the sequence after seeding
+await db.execute(text("SELECT setval('table_name_id_seq', (SELECT MAX(id) FROM table_name));"))
+```
+
+### Manual Sequence Reset
+Use the standalone script:
+```bash
+python reset_sequences.py
+```
+
+This resets sequences for all tables:
+- `users_user_id_seq`
+- `academic_years_year_id_seq`
+- `batches_batch_id_seq`
+- `subjects_subject_id_seq`
+- `lecturer_subject_priorities_id_seq`
+- `timetable_hour_formats_format_id_seq`
+- `timetable_timetable_id_seq`
 
 ## 🧹 Cleanup Options
 

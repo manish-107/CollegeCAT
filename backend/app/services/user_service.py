@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, List
 
 from fastapi import HTTPException,status
 from app.db.postgres_client import get_db
@@ -18,6 +18,19 @@ class UserService(BaseService):
     async def get_userby_email(self,email:str):
         result =  await self._repository.get_user_by_email(email=email)
         return result
+    
+    async def get_user_by_id(self, user_id: int):
+        """Get user by ID"""
+        result = await self._repository.get_by_userid(user_id=user_id)
+        return result
+    
+    async def get_all_users(self) -> List[UserResponse]:
+        """Get all users with their details"""
+        try:
+            users = await self._repository.get_all_users()
+            return [UserResponse.model_validate(user) for user in users]
+        except Exception as e:
+            raise RuntimeError(f"Error fetching users: {str(e)}")
     
     async def create_user(self,**user_data:Any):
         return await self._repository.create(**user_data)

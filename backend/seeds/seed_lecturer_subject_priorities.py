@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.models.model import LecturerSubjectPriority, Users, Subjects, Batches, AcademicYears, RoleEnum
 from app.db.postgres_client import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, text
 import random
 
 async def seed_lecturer_subject_priorities():
@@ -184,6 +184,12 @@ async def seed_lecturer_subject_priorities():
             for year in academic_years:
                 year_priorities = [p for p in final_priorities if p["year_id"] == year.year_id]
                 print(f"Year {year.academic_year}: {len(year_priorities)} priorities")
+            
+            # Reset the sequence after seeding
+            print("🔄 Resetting lecturer_subject_priorities sequence...")
+            await db.execute(text("SELECT setval('lecturer_subject_priorities_id_seq', (SELECT MAX(id) FROM lecturer_subject_priorities));"))
+            await db.commit()
+            print("✅ Lecturer subject priorities sequence reset successfully!")
             
         except Exception as e:
             await db.rollback()

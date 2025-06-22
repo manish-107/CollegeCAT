@@ -99,6 +99,15 @@ class AcademicYears(BaseClass):
     assignments: Mapped[list["LecturerSubAssignments"]] = relationship(
         "LecturerSubAssignments", back_populates="academic_year", cascade="all, delete"
     )
+    timetable_formats: Mapped[list["TimetableHourFormats"]] = relationship(
+        "TimetableHourFormats", back_populates="year"
+    )
+    timetables: Mapped[list["Timetable"]] = relationship(
+        "Timetable", back_populates="year", cascade="all, delete"
+    )
+    workflow_stages: Mapped[list["WorkflowStage"]] = relationship(
+        "WorkflowStage", back_populates="academic_year"
+    )
 
     def __repr__(self):
         return f"<AcademicYear(id={self.year_id}, year='{self.academic_year}')>"
@@ -165,9 +174,6 @@ class Subjects(BaseClass):
     )
     assignments: Mapped[list["LecturerSubAssignments"]] = relationship(
         "LecturerSubAssignments", back_populates="subject", cascade="all, delete"
-    )
-    timetables: Mapped[list["Timetable"]] = relationship(
-        "Timetable", back_populates="subject", cascade="all, delete"
     )
 
     def __repr__(self):
@@ -254,50 +260,59 @@ class TimetableHourFormats(BaseClass):
     __tablename__ = "timetablehourformats"
 
     format_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    format_name: Mapped[str] = mapped_column(String(50), nullable=False)
+    year_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("academicyears.year_id", ondelete="RESTRICT"), nullable=False
+    )
     batch_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("batches.batch_id", ondelete="RESTRICT"), nullable=False
     )
-    format_name: Mapped[str] = mapped_column(String(50), nullable=False)
+    format_data: Mapped[dict] = mapped_column(JSON, nullable=False)
     created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
 
     batch: Mapped["Batches"] = relationship("Batches", back_populates="formats")
+    year: Mapped["AcademicYears"] = relationship("AcademicYears", back_populates="timetable_formats")
     timetables: Mapped[list["Timetable"]] = relationship(
         "Timetable", back_populates="format", cascade="all, delete"
     )
 
     def __repr__(self):
-        return f"<TimetableHourFormat(id={self.format_id}, batch_id={self.batch_id}, format_name='{self.format_name}')>"
+        return f"<TimetableHourFormat(id={self.format_id}, name='{self.format_name}', year_id={self.year_id}, batch_id={self.batch_id})>"
 
 
 class Timetable(BaseClass):
     __tablename__ = "timetables"
 
     timetable_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    batch_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("batches.batch_id", ondelete="RESTRICT"), nullable=False
-    )
-    subject_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("subjects.subject_id", ondelete="RESTRICT"), nullable=False
-    )
     format_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("timetablehourformats.format_id", ondelete="RESTRICT"),
         nullable=False,
     )
-    timetable_data: Mapped[JSON] = mapped_column(JSON, nullable=False)
+    year_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("academicyears.year_id", ondelete="RESTRICT"), nullable=False
+    )
+    batch_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("batches.batch_id", ondelete="RESTRICT"), nullable=False
+    )
+    timetable_data: Mapped[dict] = mapped_column(
+        JSON, 
+        nullable=False,
+        comment="JSON structure containing daily subject schedules. Format: {'monday': ['subject1', 'subject2'], 'tuesday': ['subject1', 'subject2'], ...}"
+    )
     created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
 
     batch: Mapped["Batches"] = relationship("Batches", back_populates="timetables")
-    subject: Mapped["Subjects"] = relationship("Subjects", back_populates="timetables")
     format: Mapped["TimetableHourFormats"] = relationship(
         "TimetableHourFormats", back_populates="timetables"
     )
+    year: Mapped["AcademicYears"] = relationship("AcademicYears", back_populates="timetables")
     approvals: Mapped[list["Approvals"]] = relationship(
         "Approvals", back_populates="timetable", cascade="all, delete"
     )
 
     def __repr__(self):
-        return f"<Timetable(id={self.timetable_id}, batch_id={self.batch_id}, subject_id={self.subject_id})>"
+        return f"<Timetable(id={self.timetable_id}, batch_id={self.batch_id}, year_id={self.year_id})>"
 
 
 class Approvals(BaseClass):
@@ -380,3 +395,19 @@ class LecturerSubjectAllocation(BaseClass):
 
     def __repr__(self):
         return f"<LecturerSubjectAllocation(allocation_id={self.allocation_id}, lecturer_id={self.lecturer_id}, subject_id={self.subject_id}, batch_id={self.batch_id}, year_id={self.year_id})>"
+
+
+class WorkflowStage(BaseClass):
+    __tablename__ = "workflow_stages"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    year_id: Mapped[int] = mapped_column(Integer, ForeignKey("academicyears.year_id"), nullable=False)
+    current_step: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    is_completed: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
+    
+    # Relationships
+    academic_year: Mapped["AcademicYears"] = relationship("AcademicYears", back_populates="workflow_stages")
+    
+    def __repr__(self):
+        return f"<WorkflowStage(id={self.id}, year_id={self.year_id}, current_step={self.current_step}, is_completed={self.is_completed})>"

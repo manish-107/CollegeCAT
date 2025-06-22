@@ -17,6 +17,7 @@ from app.services.auth_services import (
 )
 from app.services.user_service import UserService
 from app.repositories.user_repository import UserRepository
+from sqlalchemy import text
 
 authRoute = APIRouter()
 

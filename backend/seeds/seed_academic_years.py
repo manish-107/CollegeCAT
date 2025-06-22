@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.models.model import AcademicYears
 from app.db.postgres_client import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 async def seed_academic_years():
     """Seed academic years data"""
@@ -39,6 +39,12 @@ async def seed_academic_years():
             
             await db.commit()
             print("Academic years seeding completed successfully!")
+            
+            # Reset the sequence after seeding
+            print("🔄 Resetting academic_years sequence...")
+            await db.execute(text("SELECT setval('academicyears_year_id_seq', (SELECT MAX(year_id) FROM academicyears));"))
+            await db.commit()
+            print("✅ Academic years sequence reset successfully!")
             
         except Exception as e:
             await db.rollback()

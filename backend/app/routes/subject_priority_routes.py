@@ -13,7 +13,7 @@ from app.schemas.lecturer_priority_schema import (
 )
 from typing import Union
 
-router = APIRouter(prefix="/subject-priority", tags=["Subject Priority Management"])
+router = APIRouter(prefix="/subject-priority")
 
 def get_service(db: AsyncSession = Depends(get_db)) -> LecturerPriorityService:
     repository = LecturerPriorityRepository(db)

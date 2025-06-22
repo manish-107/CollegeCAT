@@ -2,6 +2,7 @@ from app.models.model import Users
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.core.repository_base import BaseRepository
+from typing import List
 
 
 class UserRepository(BaseRepository[Users]):
@@ -22,3 +23,8 @@ class UserRepository(BaseRepository[Users]):
             select(Users).where(Users.user_id == user_id)
         )
         return result.scalars().first()
+
+    async def get_all_users(self) -> List[Users]:
+        """Get all users from the database"""
+        result = await self.session.execute(select(Users))
+        return list(result.scalars().all())

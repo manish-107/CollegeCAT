@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.models.model import Batches, AcademicYears
 from app.db.postgres_client import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 async def seed_batches():
     """Seed batches data"""
@@ -66,6 +66,12 @@ async def seed_batches():
             
             await db.commit()
             print("Batches seeding completed successfully!")
+            
+            # Reset the sequence after seeding
+            print("🔄 Resetting batches sequence...")
+            await db.execute(text("SELECT setval('batches_batch_id_seq', (SELECT MAX(batch_id) FROM batches));"))
+            await db.commit()
+            print("✅ Batches sequence reset successfully!")
             
         except Exception as e:
             await db.rollback()

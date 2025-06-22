@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.models.model import Users, RoleEnum
 from app.db.postgres_client import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 async def seed_users():
     """Seed users data"""
@@ -68,6 +68,12 @@ async def seed_users():
             print("Users seeding completed successfully!")
             print(f"Total users created: {len(users_data)}")
             print(f"Breakdown: 1 HOD, 1 TIMETABLE_COORDINATOR, 28 LECTURERs")
+            
+            # Reset the sequence after seeding
+            print("🔄 Resetting users sequence...")
+            await db.execute(text("SELECT setval('users_user_id_seq', (SELECT MAX(user_id) FROM users));"))
+            await db.commit()
+            print("✅ Users sequence reset successfully!")
             
         except Exception as e:
             await db.rollback()
