@@ -31,19 +31,19 @@ const batchData = {
 
 export default function DashboardPage() {
   return (
-    <div className="p-6 space-y-8">
+    <div className="space-y-8 p-6">
       {Object.entries(batchData).map(([batchName, tasks]) => (
         <div key={batchName} className="space-y-4">
-          <h2 className="text-lg font-semibold">{batchName}</h2>
+          <h2 className="font-semibold text-lg">{batchName}</h2>
           {tasks.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="gap-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {tasks.map((task, index) => (
                 <div
                   key={index}
-                  className="bg-card rounded-md p-3 border text-sm"
+                  className="bg-card p-3 border rounded-md text-sm"
                 >
                   <h4 className="font-medium">{task.title}</h4>
-                  <p className="text-xs text-muted-foreground mb-2">
+                  <p className="mb-2 text-muted-foreground text-xs">
                     {task.description}
                   </p>
                   <div className="flex justify-between text-muted-foreground text-xs">
@@ -60,7 +60,7 @@ export default function DashboardPage() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground italic">
+            <p className="text-muted-foreground text-sm italic">
               No tasks for this batch.
             </p>
           )}
