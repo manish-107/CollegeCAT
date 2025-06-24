@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Bell, ChevronLeft, Menu } from 'lucide-react';
+import { Bell, ChevronLeft, Menu, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import NotificationDropdown from '@/app/dashboard/components/NotificationDropdown'; // Adjust path as needed
 
 interface HeaderProps {
@@ -12,6 +13,15 @@ interface HeaderProps {
 
 const Header = ({ onToggleSidebar, sidebarOpen }: HeaderProps) => {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [selectedYear, setSelectedYear] = useState('2025-2026');
+
+  const academicYears = [
+    '2025-2026',
+    '2024-2025',
+    '2023-2024',
+    '2022-2023',
+    '2021-2022'
+  ];
 
   const toggleNotifications = () => {
     setNotificationsOpen(!notificationsOpen);
@@ -30,13 +40,27 @@ const Header = ({ onToggleSidebar, sidebarOpen }: HeaderProps) => {
             {sidebarOpen ? <ChevronLeft size={18} /> : <Menu size={18} />}
           </Button>
 
-          <div className="relative w-[240px]">
-            <Search size={16} className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="w-full bg-secondary/90 border-0 rounded-md pl-8 h-9 text-sm focus:ring-1 focus:ring-primary"
-            />
+          {/* Year Dropdown */}
+          <div className="ml-4">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2 bg-secondary/90 border-border">
+                  <span className="text-sm font-medium">{selectedYear}</span>
+                  <ChevronDown size={16} className="text-muted-foreground" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-48">
+                {academicYears.map((year) => (
+                  <DropdownMenuItem
+                    key={year}
+                    onClick={() => setSelectedYear(year)}
+                    className={`cursor-pointer ${selectedYear === year ? 'bg-accent' : ''}`}
+                  >
+                    {year}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
