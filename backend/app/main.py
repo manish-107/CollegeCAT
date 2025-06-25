@@ -22,10 +22,12 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3001"],  # Frontend's origin
+    allow_origins=[
+        "http://localhost:3001",
+    ],
     allow_credentials=True,
-    allow_methods=["*"],  # Ensure OPTIONS is allowed
-    allow_headers=["*"],  # Allow all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -44,7 +46,7 @@ app.include_router(year_batch_router, prefix="/api/academic", tags=["Academic Ye
 app.include_router(subject_priority_router, prefix="/api/priority", tags=["Lecturer Subject Priority"])
 app.include_router(timetable_router, prefix="/api", tags=["Timetable Formats"])
 app.include_router(timetable_module_router, prefix="/api", tags=["Timetable Modules"])
-app.include_router(workflow_router, prefix="/api/workflow", tags=["Workflow"])
+app.include_router(workflow_router, prefix="/api/workflow")
 
 
 @app.get("/")

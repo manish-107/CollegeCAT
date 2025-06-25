@@ -33,6 +33,7 @@ async def seed_subjects():
                     "year_id": 1,
                     "subject_name": "Data Structures and Algorithms",
                     "subject_code": "DSA2024",
+                    "abbreviation": "DSA",
                     "subject_type": SubjectTypeEnum.CORE,
                     "no_of_hours_required": 4
                 },
@@ -41,6 +42,7 @@ async def seed_subjects():
                     "year_id": 1,
                     "subject_name": "Database Management Systems",
                     "subject_code": "DBMS2024",
+                    "abbreviation": "DBMS",
                     "subject_type": SubjectTypeEnum.CORE,
                     "no_of_hours_required": 3
                 },
@@ -49,6 +51,7 @@ async def seed_subjects():
                     "year_id": 1,
                     "subject_name": "Computer Networks",
                     "subject_code": "CN2024",
+                    "abbreviation": "CN",
                     "subject_type": SubjectTypeEnum.CORE,
                     "no_of_hours_required": 3
                 },
@@ -57,6 +60,7 @@ async def seed_subjects():
                     "year_id": 1,
                     "subject_name": "Operating Systems",
                     "subject_code": "OS2024",
+                    "abbreviation": "OS",
                     "subject_type": SubjectTypeEnum.CORE,
                     "no_of_hours_required": 3
                 },
@@ -66,6 +70,7 @@ async def seed_subjects():
                     "year_id": 1,
                     "subject_name": "Machine Learning",
                     "subject_code": "ML2024",
+                    "abbreviation": "ML",
                     "subject_type": SubjectTypeEnum.ELECTIVE,
                     "no_of_hours_required": 3
                 },
@@ -74,6 +79,7 @@ async def seed_subjects():
                     "year_id": 1,
                     "subject_name": "Web Development",
                     "subject_code": "WD2024",
+                    "abbreviation": "WD",
                     "subject_type": SubjectTypeEnum.ELECTIVE,
                     "no_of_hours_required": 3
                 },
@@ -83,6 +89,7 @@ async def seed_subjects():
                     "year_id": 1,
                     "subject_name": "Programming Lab",
                     "subject_code": "PL2024",
+                    "abbreviation": "PL",
                     "subject_type": SubjectTypeEnum.LAB,
                     "no_of_hours_required": 2
                 },
@@ -91,6 +98,7 @@ async def seed_subjects():
                     "year_id": 1,
                     "subject_name": "Database Lab",
                     "subject_code": "DL2024",
+                    "abbreviation": "DL",
                     "subject_type": SubjectTypeEnum.LAB,
                     "no_of_hours_required": 2
                 },
@@ -100,6 +108,7 @@ async def seed_subjects():
                     "year_id": 2,
                     "subject_name": "Data Structures and Algorithms",
                     "subject_code": "DSA2025",
+                    "abbreviation": "DSA",
                     "subject_type": SubjectTypeEnum.CORE,
                     "no_of_hours_required": 4
                 },
@@ -108,6 +117,7 @@ async def seed_subjects():
                     "year_id": 2,
                     "subject_name": "Database Management Systems",
                     "subject_code": "DBMS2025",
+                    "abbreviation": "DBMS",
                     "subject_type": SubjectTypeEnum.CORE,
                     "no_of_hours_required": 3
                 },
@@ -116,6 +126,7 @@ async def seed_subjects():
                     "year_id": 2,
                     "subject_name": "Computer Networks",
                     "subject_code": "CN2025",
+                    "abbreviation": "CN",
                     "subject_type": SubjectTypeEnum.CORE,
                     "no_of_hours_required": 3
                 },
@@ -124,6 +135,7 @@ async def seed_subjects():
                     "year_id": 2,
                     "subject_name": "Operating Systems",
                     "subject_code": "OS2025",
+                    "abbreviation": "OS",
                     "subject_type": SubjectTypeEnum.CORE,
                     "no_of_hours_required": 3
                 },
@@ -133,6 +145,7 @@ async def seed_subjects():
                     "year_id": 2,
                     "subject_name": "Machine Learning",
                     "subject_code": "ML2025",
+                    "abbreviation": "ML",
                     "subject_type": SubjectTypeEnum.ELECTIVE,
                     "no_of_hours_required": 3
                 },
@@ -141,6 +154,7 @@ async def seed_subjects():
                     "year_id": 2,
                     "subject_name": "Web Development",
                     "subject_code": "WD2025",
+                    "abbreviation": "WD",
                     "subject_type": SubjectTypeEnum.ELECTIVE,
                     "no_of_hours_required": 3
                 },
@@ -150,6 +164,7 @@ async def seed_subjects():
                     "year_id": 2,
                     "subject_name": "Programming Lab",
                     "subject_code": "PL2025",
+                    "abbreviation": "PL",
                     "subject_type": SubjectTypeEnum.LAB,
                     "no_of_hours_required": 2
                 },
@@ -158,6 +173,7 @@ async def seed_subjects():
                     "year_id": 2,
                     "subject_name": "Database Lab",
                     "subject_code": "DL2025",
+                    "abbreviation": "DL",
                     "subject_type": SubjectTypeEnum.LAB,
                     "no_of_hours_required": 2
                 }

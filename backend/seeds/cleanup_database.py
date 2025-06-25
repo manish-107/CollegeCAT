@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.models.model import (
     LecturerSubjectAllocation, LecturerSubjectPriority, LecturerPreferences,
     LecturerSubAssignments, TimetableHourFormats, Timetable, Approvals,
-    Users, Subjects, Batches, AcademicYears
+    Users, Subjects, Batches, AcademicYears, WorkflowStage
 )
 from app.db.postgres_client import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -73,7 +73,12 @@ async def cleanup_database():
             result = await db.execute(delete(Batches))
             print(f"   Deleted {result.rowcount} batches")
             
-            # 11. Clean up academic years
+            # 11. Clean up workflow stages (depends on years)
+            print("🗑️ Cleaning up Workflow Stages...")
+            result = await db.execute(delete(WorkflowStage))
+            print(f"   Deleted {result.rowcount} workflow stages")
+            
+            # 12. Clean up academic years
             print("🗑️ Cleaning up Academic Years...")
             result = await db.execute(delete(AcademicYears))
             print(f"   Deleted {result.rowcount} academic years")

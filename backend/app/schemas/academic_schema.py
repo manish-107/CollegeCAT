@@ -60,6 +60,7 @@ class ErrorResponse(BaseModel):
 class SubjectBase(BaseModel):
     subject_name: str = Field(..., description="Name of the subject (e.g., 'Data Structures', 'Machine Learning')")
     subject_code: str = Field(..., description="Unique code for the subject (e.g., 'CS101', 'ML2023')")
+    abbreviation: str = Field(..., description="Short abbreviation for the subject (e.g., 'DSA', 'CN', 'CA')")
     subject_type: SubjectTypeEnum = Field(..., description="Type of subject: CORE, ELECTIVE, or LAB")
     no_of_hours_required: int = Field(..., gt=0, description="Number of hours required for the subject")
     year_id: int = Field(..., description="Associated academic year ID")
@@ -70,6 +71,7 @@ class SubjectCreate(SubjectBase):
 class SubjectUpdate(BaseModel):
     subject_name: Optional[str] = Field(None, description="Updated name of the subject")
     subject_code: Optional[str] = Field(None, description="Updated unique code for the subject")
+    abbreviation: Optional[str] = Field(None, description="Updated abbreviation for the subject")
     subject_type: Optional[SubjectTypeEnum] = Field(None, description="Updated type of subject")
     no_of_hours_required: Optional[int] = Field(None, gt=0, description="Updated number of hours required")
 

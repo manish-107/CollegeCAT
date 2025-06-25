@@ -38,6 +38,7 @@ class PrioritySubjectResponse(BaseModel):
     subject_name: str = Field(..., description="Name of the subject")
     subject_code: str = Field(..., description="Code of the subject")
     subject_type: str = Field(..., description="Type of subject (CORE, ELECTIVE, LAB)")
+    abbreviation: str = Field(..., description="Short abbreviation for the subject (e.g., 'DSA', 'CN', 'CA')")
     batch_id: int = Field(..., description="ID of the batch")
     batch_section: str = Field(..., description="Section name of the batch")
     batch_noOfStudent: int = Field(..., description="Number of students in the batch")
@@ -75,6 +76,7 @@ class LecturerPriorityDetailedResponse(BaseModel):
     subject_name: str = Field(..., description="Name of the subject")
     subject_code: str = Field(..., description="Code of the subject")
     subject_type: str = Field(..., description="Type of subject (CORE, ELECTIVE, LAB)")
+    abbreviation: str = Field(..., description="Short abbreviation for the subject (e.g., 'DSA', 'CN', 'CA')")
     batch_id: int = Field(..., description="ID of the batch")
     batch_section: str = Field(..., description="Section name of the batch")
     batch_noOfStudent: int = Field(..., description="Number of students in the batch")
@@ -95,6 +97,7 @@ class LecturerSubjectAllocationResponse(BaseModel):
     subject_name: str = Field(..., description="Name of the allocated subject")
     subject_code: str = Field(..., description="Code of the allocated subject")
     subject_type: str = Field(..., description="Type of allocated subject (CORE, ELECTIVE, LAB)")
+    abbreviation: str = Field(..., description="Short abbreviation for the subject (e.g., 'DSA', 'CN', 'CA')")
     batch_id: int = Field(..., description="ID of the allocated batch")
     batch_section: str = Field(..., description="Section name of the allocated batch")
     batch_noOfStudent: int = Field(..., description="Number of students in the allocated batch")
@@ -125,6 +128,7 @@ class AllocatedSubjectResponse(BaseModel):
     subject_name: str = Field(..., description="Name of the allocated subject")
     subject_code: str = Field(..., description="Code of the allocated subject")
     subject_type: str = Field(..., description="Type of allocated subject (CORE, ELECTIVE, LAB)")
+    abbreviation: str = Field(..., description="Short abbreviation for the subject (e.g., 'DSA', 'CN', 'CA')")
     allocated_lecturer: AllocatedLecturerResponse = Field(..., description="Details of the lecturer allocated to this subject")
 
 class AllocatedBatchResponse(BaseModel):
@@ -147,6 +151,7 @@ class LecturerPrioritySubjectResponse(BaseModel):
     subject_name: str = Field(..., description="Name of the subject")
     subject_code: str = Field(..., description="Code of the subject")
     subject_type: str = Field(..., description="Type of subject (CORE, ELECTIVE, LAB)")
+    abbreviation: str = Field(..., description="Short abbreviation for the subject (e.g., 'DSA', 'CN', 'CA')")
     priority: int = Field(..., description="Priority level (1-5)")
 
 class LecturerPriorityBatchResponse(BaseModel):

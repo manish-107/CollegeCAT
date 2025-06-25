@@ -106,6 +106,7 @@ class LecturerPriorityRepository:
                 Subjects.subject_name,
                 Subjects.subject_code,
                 Subjects.subject_type,
+                Subjects.abbreviation,
                 Batches.section.label('batch_section'),
                 Batches.noOfStudent.label('batch_noOfStudent'),
                 AcademicYears.academic_year
@@ -146,8 +147,9 @@ class LecturerPriorityRepository:
             subject_name = row[5]
             subject_code = row[6]
             subject_type = row[7]
-            batch_section = row[8]
-            batch_noOfStudent = row[9]
+            abbreviation = row[8]
+            batch_section = row[9]
+            batch_noOfStudent = row[10]
             
             batch_id = priority.batch_id
             
@@ -166,6 +168,7 @@ class LecturerPriorityRepository:
                 'subject_name': subject_name,
                 'subject_code': subject_code,
                 'subject_type': subject_type.value,
+                'abbreviation': abbreviation,
                 'priority': priority.priority
             })
         
@@ -194,6 +197,7 @@ class LecturerPriorityRepository:
                 Subjects.subject_name,
                 Subjects.subject_code,
                 Subjects.subject_type,
+                Subjects.abbreviation,
                 Batches.section.label('batch_section'),
                 Batches.noOfStudent.label('batch_noOfStudent'),
                 AcademicYears.academic_year
@@ -236,9 +240,10 @@ class LecturerPriorityRepository:
                 'subject_name': row[3],
                 'subject_code': row[4],
                 'subject_type': row[5].value,
+                'abbreviation': row[6],
                 'batch_id': row[0].batch_id,
-                'batch_section': row[6],
-                'batch_noOfStudent': row[7],
+                'batch_section': row[7],
+                'batch_noOfStudent': row[8],
                 'priority': row[0].priority,
                 'created_at': row[0].created_at
             })
@@ -331,6 +336,7 @@ class LecturerPriorityRepository:
                 Subjects.subject_name,
                 Subjects.subject_code,
                 Subjects.subject_type,
+                Subjects.abbreviation,
                 Batches.section.label('batch_section'),
                 Batches.noOfStudent.label('batch_noOfStudent'),
                 AcademicYears.academic_year
@@ -360,11 +366,12 @@ class LecturerPriorityRepository:
                 'subject_name': row[3],
                 'subject_code': row[4],
                 'subject_type': row[5].value,
+                'abbreviation': row[6],
                 'batch_id': row[0].batch_id,
-                'batch_section': row[6],
-                'batch_noOfStudent': row[7],
+                'batch_section': row[7],
+                'batch_noOfStudent': row[8],
                 'year_id': row[0].year_id,
-                'academic_year': row[8],
+                'academic_year': row[9],
                 'allocated_priority': row[0].allocated_priority,
                 'created_at': row[0].created_at
             }
@@ -421,6 +428,7 @@ class LecturerPriorityRepository:
                 Subjects.subject_name,
                 Subjects.subject_code,
                 Subjects.subject_type,
+                Subjects.abbreviation,
                 Batches.section.label('batch_section'),
                 Batches.noOfStudent.label('batch_noOfStudent'),
                 AcademicYears.academic_year
@@ -453,9 +461,10 @@ class LecturerPriorityRepository:
             subject_name = row[5]
             subject_code = row[6]
             subject_type = row[7]
-            batch_section = row[8]
-            batch_noOfStudent = row[9]
-            academic_year = row[10]
+            abbreviation = row[8]
+            batch_section = row[9]
+            batch_noOfStudent = row[10]
+            academic_year = row[11]
             
             # Create year entry if not exists
             if year_id not in allocations_data:
@@ -481,6 +490,7 @@ class LecturerPriorityRepository:
                     'subject_name': subject_name,
                     'subject_code': subject_code,
                     'subject_type': subject_type.value,
+                    'abbreviation': abbreviation,
                     'allocated_lecturer': {
                         'lecturer_id': allocation.lecturer_id,
                         'uname': lecturer_name,

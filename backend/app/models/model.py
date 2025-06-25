@@ -164,6 +164,7 @@ class Subjects(BaseClass):
         Enum(SubjectTypeEnum), nullable=False
     )
     no_of_hours_required: Mapped[int] = mapped_column(Integer, nullable=False)
+    abbreviation: Mapped[str] = mapped_column(String(20), nullable=False)
     created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
 
     year: Mapped["AcademicYears"] = relationship(
@@ -177,7 +178,7 @@ class Subjects(BaseClass):
     )
 
     def __repr__(self):
-        return f"<Subject(id={self.subject_id}, name='{self.subject_name}', code='{self.subject_code}', type='{self.subject_type.name}')>"
+        return f"<Subject(id={self.subject_id}, name='{self.subject_name}', code='{self.subject_code}', abbreviation='{self.abbreviation}', type='{self.subject_type.name}')>"
 
 
 # Continue the other models in a similar manner.
