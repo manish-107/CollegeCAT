@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Bell, ChevronLeft, Menu, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,7 +10,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import NotificationDropdown from '@/app/dashboard/components/NotificationDropdown';
-import api from '@/lib/api';
+import {
+  getYearsWithBatchesOptions
+} from '@/app/client/@tanstack/react-query.gen';
+import { useQuery } from '@tanstack/react-query';
 
 interface HeaderProps {
   onToggleSidebar: () => void;
@@ -19,28 +22,21 @@ interface HeaderProps {
 
 const Header = ({ onToggleSidebar, sidebarOpen }: HeaderProps) => {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [selectedYear, setSelectedYear] = useState<string>('');
-  const [academicYears, setAcademicYears] = useState<string[]>([]);
+
+  const { data, isLoading, error } = useQuery(getYearsWithBatchesOptions());
+  const academicYears = data?.items.map(i => i.academic_year) ?? [];
+  const [selectedYear, setSelectedYear] = useState(academicYears[0] ?? '');
+
+  // Update selected year when data loads
+  useEffect(() => {
+    if (academicYears.length > 0 && !selectedYear) {
+      setSelectedYear(academicYears[0]);
+    }
+  }, [academicYears, selectedYear]);
 
   const toggleNotifications = () => {
     setNotificationsOpen(!notificationsOpen);
   };
-
- useEffect(() => {
-  api.get('academic/academic-years-with-batchs')
-    .then((res: { data: { items: any[] } }) => {
-      const years = res.data.items.map((item: any) => item.academic_year);
-      setAcademicYears(years);
-      if (years.length > 0) {
-        setSelectedYear(years[0]);
-      }
-    })
-    .catch((err: unknown) => {
-      console.error('Error fetching academic years:', err);
-    });
-}, []);
-
-
 
   return (
     <div className="relative flex flex-col justify-between bg-sidebar border-b border-border text-[var(--sidebar-foreground)]">
@@ -59,21 +55,37 @@ const Header = ({ onToggleSidebar, sidebarOpen }: HeaderProps) => {
           <div className="ml-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-2 bg-secondary/90 border-border">
-                  <span className="font-medium text-sm">{selectedYear || 'Select Year'}</span>
+                <Button 
+                  variant="outline" 
+                  className="flex items-center gap-2 bg-secondary/90 border-border"
+                  disabled={isLoading}
+                >
+                  <span className="font-medium text-sm">
+                    {isLoading ? 'Loading...' : selectedYear || 'Select Year'}
+                  </span>
                   <ChevronDown size={16} className="text-muted-foreground" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-48">
-                {academicYears.map((year) => (
-                  <DropdownMenuItem
-                    key={year}
-                    onClick={() => setSelectedYear(year)}
-                    className={`cursor-pointer ${selectedYear === year ? 'bg-accent' : ''}`}
-                  >
-                    {year}
+                {error ? (
+                  <DropdownMenuItem disabled className="text-red-500">
+                    Error loading years
                   </DropdownMenuItem>
-                ))}
+                ) : academicYears.length === 0 ? (
+                  <DropdownMenuItem disabled>
+                    No years available
+                  </DropdownMenuItem>
+                ) : (
+                  academicYears.map((year) => (
+                    <DropdownMenuItem
+                      key={year}
+                      onClick={() => setSelectedYear(year)}
+                      className={`cursor-pointer ${selectedYear === year ? 'bg-accent' : ''}`}
+                    >
+                      {year}
+                    </DropdownMenuItem>
+                  ))
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

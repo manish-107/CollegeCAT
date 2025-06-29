@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ModeToggle } from "@/components/custom/ModeToggle";
 import { Toaster } from "@/components/ui/sonner"
+import QueryProvider from "@/app/providers/QueryProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,20 +31,22 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-white dark:bg-black text-black dark:text-white`}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {/* Global dark/light toggle */}
-          <div className="top-3 right-4 z-50 fixed">
-            <ModeToggle />
-          </div>
-          {/* Page content */}
-          <main>{children}</main>
-          <Toaster />
-        </ThemeProvider>
+        <QueryProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            {/* Global dark/light toggle */}
+            <div className="top-3 right-4 z-50 fixed">
+              <ModeToggle />
+            </div>
+            {/* Page content */}
+            <main>{children}</main>
+            <Toaster />
+          </ThemeProvider>
+        </QueryProvider>
       </body>
     </html>
   );
