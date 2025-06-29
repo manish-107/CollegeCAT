@@ -1,16 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Path, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Optional
 from app.db.postgres_client import get_db
+from app.schemas.lecturer_priority_schema import SuccessResponse
 from app.services.timetable_module_service import TimetableModuleService
 from app.schemas.timetable_module_schema import (
     TimetableModuleCreate,
     TimetableModuleUpdate,
     TimetableModuleResponse,
     TimetableModuleListResponse,
-    TimetableModuleDeleteResponse,
-    TimetableModuleUpdateResponse,
-    ErrorResponse
 )
 import logging
 
@@ -20,14 +17,11 @@ router = APIRouter(prefix="/timetable-modules")
 
 @router.post(
     "/",
-    response_model=TimetableModuleResponse,
+    response_model=SuccessResponse,
     status_code=status.HTTP_201_CREATED,
+    operation_id="create_timetable_module",
     responses={
         201: {"description": "Timetable module created successfully"},
-        400: {"model": ErrorResponse, "description": "Bad request - Invalid data"},
-        404: {"model": ErrorResponse, "description": "Not found - Format, year, or batch not found"},
-        409: {"model": ErrorResponse, "description": "Conflict - Timetable already exists"},
-        500: {"model": ErrorResponse, "description": "Internal server error"}
     }
 )
 async def create_timetable_module(
@@ -51,11 +45,12 @@ async def create_timetable_module(
         if not service.validate_timetable_data(timetable_data.timetable_data):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid timetable data structure. Must contain all days (monday, tuesday, wednesday, thursday, friday, saturday) with list values."
+                detail="Bad request - Invalid data"
             )
         
         result = await service.create_timetable_module(timetable_data)
-        return result
+        return SuccessResponse(message="Timetable module created successfully",data=result)
+
         
     except ValueError as e:
         logger.error(f"Validation error in create_timetable_module: {str(e)}")
@@ -73,10 +68,9 @@ async def create_timetable_module(
 @router.get(
     "/year/{year_id}",
     response_model=TimetableModuleListResponse,
+    operation_id="get_timetables_by_year",
     responses={
         200: {"description": "Timetables retrieved successfully"},
-        404: {"model": ErrorResponse, "description": "Not found - No timetables found for the year"},
-        500: {"model": ErrorResponse, "description": "Internal server error"}
     }
 )
 async def get_timetables_by_year(
@@ -114,10 +108,9 @@ async def get_timetables_by_year(
 @router.get(
     "/year/{year_id}/batch/{batch_id}",
     response_model=TimetableModuleResponse,
+    operation_id="get_timetable_by_year_and_batch",
     responses={
         200: {"description": "Timetable retrieved successfully"},
-        404: {"model": ErrorResponse, "description": "Not found - Timetable not found"},
-        500: {"model": ErrorResponse, "description": "Internal server error"}
     }
 )
 async def get_timetable_by_year_and_batch(
@@ -157,14 +150,13 @@ async def get_timetable_by_year_and_batch(
 @router.get(
     "/{timetable_id}",
     response_model=TimetableModuleResponse,
+    operation_id="get_timetable_by_id",
     responses={
         200: {"description": "Timetable retrieved successfully"},
-        404: {"model": ErrorResponse, "description": "Not found - Timetable not found"},
-        500: {"model": ErrorResponse, "description": "Internal server error"}
     }
 )
 async def get_timetable_by_id(
-    timetable_id: int,
+    timetable_id: int = Path(..., description="ID of the timetable",examples=[1]),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -197,17 +189,15 @@ async def get_timetable_by_id(
 
 @router.put(
     "/{timetable_id}",
-    response_model=TimetableModuleUpdateResponse,
+    response_model=SuccessResponse,
+    operation_id="update_timetable_module",
     responses={
         200: {"description": "Timetable updated successfully"},
-        400: {"model": ErrorResponse, "description": "Bad request - Invalid data"},
-        404: {"model": ErrorResponse, "description": "Not found - Timetable not found"},
-        500: {"model": ErrorResponse, "description": "Internal server error"}
     }
 )
 async def update_timetable_module(
-    timetable_id: int,
     update_data: TimetableModuleUpdate,
+    timetable_id: int = Path(..., description="ID of the timetable",examples=[1]),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -236,7 +226,7 @@ async def update_timetable_module(
                 detail=f"Timetable not found with ID: {timetable_id}"
             )
         
-        return result
+        return SuccessResponse(message="Timetable module updated successfully",data=result.timetable_id)
         
     except HTTPException:
         raise
@@ -255,15 +245,14 @@ async def update_timetable_module(
 
 @router.delete(
     "/{timetable_id}",
-    response_model=TimetableModuleDeleteResponse,
+    response_model=SuccessResponse,
+    operation_id="delete_timetable_module",
     responses={
         200: {"description": "Timetable deleted successfully"},
-        404: {"model": ErrorResponse, "description": "Not found - Timetable not found"},
-        500: {"model": ErrorResponse, "description": "Internal server error"}
     }
 )
 async def delete_timetable_module(
-    timetable_id: int,
+    timetable_id: int = Path(..., description="ID of the timetable",examples=[1]),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -283,7 +272,7 @@ async def delete_timetable_module(
                 detail=f"Timetable not found with ID: {timetable_id}"
             )
         
-        return result
+        return SuccessResponse(message="Timetable module deleted successfully",data=result.timetable_id)
         
     except HTTPException:
         raise

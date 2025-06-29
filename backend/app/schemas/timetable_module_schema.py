@@ -82,7 +82,3 @@ class TimetableModuleUpdateResponse(BaseModel):
     message: str = Field(..., description="Success message", examples=["Timetable module updated successfully"])
     timetable_id: int = Field(..., description="ID of the updated timetable", examples=[1])
     updated_data: TimetableModuleResponse = Field(..., description="Updated timetable data")
-
-class ErrorResponse(BaseModel):
-    """Schema for error responses"""
-    detail: str = Field(..., description="Error message", examples=["Timetable module not found"]) 

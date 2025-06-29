@@ -21,7 +21,7 @@ class BaseClass(DeclarativeBase):
 class RoleEnum(enum.Enum):
     HOD = "HOD"
     TIMETABLE_COORDINATOR = "TIMETABLE_COORDINATOR"
-    LECTURER = "LECTURER"
+    FACULTY = "FACULTY"
 
 
 class SubjectTypeEnum(enum.Enum):
@@ -66,14 +66,14 @@ class Users(BaseClass):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
 
-    preferences: Mapped[list["LecturerPreferences"]] = relationship(
-        "LecturerPreferences", back_populates="lecturer"
+    preferences: Mapped[list["FacultyPreferences"]] = relationship(
+        "FacultyPreferences", back_populates="faculty"
     )
-    assignments_given: Mapped[list["LecturerSubAssignments"]] = relationship(
-        "LecturerSubAssignments", foreign_keys="LecturerSubAssignments.assigned_by"
+    assignments_given: Mapped[list["FacultySubAssignments"]] = relationship(
+        "FacultySubAssignments", foreign_keys="FacultySubAssignments.assigned_by"
     )
-    assignments_received: Mapped[list["LecturerSubAssignments"]] = relationship(
-        "LecturerSubAssignments", foreign_keys="LecturerSubAssignments.lecturer_id"
+    assignments_received: Mapped[list["FacultySubAssignments"]] = relationship(
+        "FacultySubAssignments", foreign_keys="FacultySubAssignments.faculty_id"
     )
 
     def __repr__(self):
@@ -93,11 +93,11 @@ class AcademicYears(BaseClass):
     subjects: Mapped[list["Subjects"]] = relationship(
         "Subjects", back_populates="year", cascade="all, delete"
     )
-    preferences: Mapped[list["LecturerPreferences"]] = relationship(
-        "LecturerPreferences", back_populates="year", cascade="all, delete"
+    preferences: Mapped[list["FacultyPreferences"]] = relationship(
+        "FacultyPreferences", back_populates="year", cascade="all, delete"
     )
-    assignments: Mapped[list["LecturerSubAssignments"]] = relationship(
-        "LecturerSubAssignments", back_populates="academic_year", cascade="all, delete"
+    assignments: Mapped[list["FacultySubAssignments"]] = relationship(
+        "FacultySubAssignments", back_populates="academic_year", cascade="all, delete"
     )
     timetable_formats: Mapped[list["TimetableHourFormats"]] = relationship(
         "TimetableHourFormats", back_populates="year"
@@ -129,8 +129,8 @@ class Batches(BaseClass):
     year: Mapped["AcademicYears"] = relationship(
         "AcademicYears", back_populates="batches"
     )
-    assignments: Mapped[list["LecturerSubAssignments"]] = relationship(
-        "LecturerSubAssignments", back_populates="batch", cascade="all, delete"
+    assignments: Mapped[list["FacultySubAssignments"]] = relationship(
+        "FacultySubAssignments", back_populates="batch", cascade="all, delete"
     )
     formats: Mapped[list["TimetableHourFormats"]] = relationship(
         "TimetableHourFormats", back_populates="batch", cascade="all, delete"
@@ -170,25 +170,22 @@ class Subjects(BaseClass):
     year: Mapped["AcademicYears"] = relationship(
         "AcademicYears", back_populates="subjects"
     )
-    preferences: Mapped[list["LecturerPreferences"]] = relationship(
-        "LecturerPreferences", back_populates="subject", cascade="all, delete"
+    preferences: Mapped[list["FacultyPreferences"]] = relationship(
+        "FacultyPreferences", back_populates="subject", cascade="all, delete"
     )
-    assignments: Mapped[list["LecturerSubAssignments"]] = relationship(
-        "LecturerSubAssignments", back_populates="subject", cascade="all, delete"
+    assignments: Mapped[list["FacultySubAssignments"]] = relationship(
+        "FacultySubAssignments", back_populates="subject", cascade="all, delete"
     )
 
     def __repr__(self):
         return f"<Subject(id={self.subject_id}, name='{self.subject_name}', code='{self.subject_code}', abbreviation='{self.abbreviation}', type='{self.subject_type.name}')>"
 
 
-# Continue the other models in a similar manner.
-
-
-class LecturerPreferences(BaseClass):
-    __tablename__ = "lecturerpreferences"
+class FacultyPreferences(BaseClass):
+    __tablename__ = "faculty_preferences"
 
     preference_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    lecturer_id: Mapped[int] = mapped_column(
+    faculty_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.user_id", ondelete="RESTRICT"), nullable=False
     )
     subject_id: Mapped[int] = mapped_column(
@@ -202,7 +199,7 @@ class LecturerPreferences(BaseClass):
     preferred_time: Mapped[JSON] = mapped_column(JSON, nullable=True)
     created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
 
-    lecturer: Mapped["Users"] = relationship("Users", back_populates="preferences")
+    faculty: Mapped["Users"] = relationship("Users", back_populates="preferences")
     subject: Mapped["Subjects"] = relationship("Subjects", back_populates="preferences")
     year: Mapped["AcademicYears"] = relationship(
         "AcademicYears", back_populates="preferences"
@@ -210,19 +207,19 @@ class LecturerPreferences(BaseClass):
 
     __table_args__ = (
         UniqueConstraint(
-            "lecturer_id", "subject_id", "year_id", name="unique_lecturer_subject_year"
+            "faculty_id", "subject_id", "year_id", name="unique_faculty_subject_year"
         ),
     )
 
     def __repr__(self):
-        return f"<LecturerPreference(id={self.preference_id}, lecturer_id={self.lecturer_id}, subject_id={self.subject_id}, year_id={self.year_id})>"
+        return f"<FacultyPreference(id={self.preference_id}, faculty_id={self.faculty_id}, subject_id={self.subject_id}, year_id={self.year_id})>"
 
 
-class LecturerSubAssignments(BaseClass):
-    __tablename__ = "lecturersubassignments"
+class FacultySubAssignments(BaseClass):
+    __tablename__ = "faculty_sub_assignments"
 
     assignment_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    lecturer_id: Mapped[int] = mapped_column(
+    faculty_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.user_id", ondelete="RESTRICT"), nullable=False
     )
     subject_id: Mapped[int] = mapped_column(
@@ -241,8 +238,8 @@ class LecturerSubAssignments(BaseClass):
     )
     created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
 
-    lecturer: Mapped["Users"] = relationship(
-        "Users", back_populates="assignments_received", foreign_keys=[lecturer_id]
+    faculty: Mapped["Users"] = relationship(
+        "Users", back_populates="assignments_received", foreign_keys=[faculty_id]
     )
     subject: Mapped["Subjects"] = relationship("Subjects", back_populates="assignments")
     batch: Mapped["Batches"] = relationship("Batches", back_populates="assignments")
@@ -254,7 +251,7 @@ class LecturerSubAssignments(BaseClass):
     )
 
     def __repr__(self):
-        return f"<LecturerSubAssignment(id={self.assignment_id}, lecturer_id={self.lecturer_id}, subject_id={self.subject_id}, batch_id={self.batch_id}, academic_year_id={self.academic_year_id})>"
+        return f"<FacultySubAssignment(id={self.assignment_id}, faculty_id={self.faculty_id}, subject_id={self.subject_id}, batch_id={self.batch_id}, academic_year_id={self.academic_year_id})>"
 
 
 class TimetableHourFormats(BaseClass):
@@ -344,11 +341,11 @@ class Approvals(BaseClass):
         return f"<Approval(id={self.approval_id}, timetable_id={self.timetable_id}, status='{self.approval_status.name}', stage='{self.approval_stage.name}')>"
 
 
-class LecturerSubjectPriority(BaseClass):
-    __tablename__ = "lecturer_subject_priorities"
+class FacultySubjectPriority(BaseClass):
+    __tablename__ = "faculty_subject_priorities"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    lecturer_id: Mapped[int] = mapped_column(
+    faculty_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.user_id", ondelete="RESTRICT"), nullable=False
     )
     subject_id: Mapped[int] = mapped_column(
@@ -364,18 +361,18 @@ class LecturerSubjectPriority(BaseClass):
     created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
 
     __table_args__ = (
-        UniqueConstraint("lecturer_id", "subject_id", "batch_id", "year_id", name="unique_lecturer_subject_batch_priority"),
+        UniqueConstraint("faculty_id", "subject_id", "batch_id", "year_id", name="unique_faculty_subject_batch_priority"),
     )
 
     def __repr__(self):
-        return f"<LecturerSubjectPriority(id={self.id}, lecturer_id={self.lecturer_id}, subject_id={self.subject_id}, batch_id={self.batch_id}, priority={self.priority})>"
+        return f"<FacultySubjectPriority(id={self.id}, faculty_id={self.faculty_id}, subject_id={self.subject_id}, batch_id={self.batch_id}, priority={self.priority})>"
 
 
-class LecturerSubjectAllocation(BaseClass):
-    __tablename__ = "lecturer_subject_allocations"
+class FacultySubjectAllocation(BaseClass):
+    __tablename__ = "faculty_subject_allocations"
 
     allocation_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    lecturer_id: Mapped[int] = mapped_column(
+    faculty_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.user_id", ondelete="RESTRICT"), nullable=False
     )
     subject_id: Mapped[int] = mapped_column(
@@ -395,7 +392,7 @@ class LecturerSubjectAllocation(BaseClass):
     )
 
     def __repr__(self):
-        return f"<LecturerSubjectAllocation(allocation_id={self.allocation_id}, lecturer_id={self.lecturer_id}, subject_id={self.subject_id}, batch_id={self.batch_id}, year_id={self.year_id})>"
+        return f"<FacultySubjectAllocation(allocation_id={self.allocation_id}, faculty_id={self.faculty_id}, subject_id={self.subject_id}, batch_id={self.batch_id}, year_id={self.year_id})>"
 
 
 class WorkflowStage(BaseClass):

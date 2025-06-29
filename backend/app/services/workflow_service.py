@@ -2,10 +2,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from fastapi.responses import JSONResponse
 from app.repositories.workflow_repository import WorkflowRepository
-from app.schemas.workflow_schema import WorkflowStageCreate, WorkflowStageResponse, WorkflowStepResponse
+from app.schemas.workflow_schema import WorkflowStageCreate
 from app.models.model import WorkflowStageEnum
 from app.core.response_formatter import ResponseFormatter
-
+from fastapi import HTTPException
 
 class WorkflowService:
     def __init__(self, db: AsyncSession):
@@ -19,24 +19,17 @@ class WorkflowService:
         except ValueError:
             return f"Step {step_number}"
     
-    async def create_workflow_stage(self, workflow_data: WorkflowStageCreate) -> JSONResponse:
+    async def create_workflow_stage(self, workflow_data: WorkflowStageCreate) -> int:
         """Create a new workflow stage"""
         # Check if workflow already exists for this year
         existing = await self.repository.get_workflow_stage_by_year(workflow_data.year_id)
         if existing:
-            return ResponseFormatter.failure(
-                error="Workflow stage already exists for this academic year",
-                message="Workflow stage already exists for this academic year",
-                status_code=400
-            )
+            raise HTTPException(status_code=400, detail="Workflow stage already exists for this academic year")
         
         workflow_stage = await self.repository.create_workflow_stage(workflow_data)
-        response_data = WorkflowStageResponse.model_validate(workflow_stage)
-        
-        return ResponseFormatter.success(
-            data=response_data.model_dump(mode='json'),
-            message="Workflow stage created successfully"
-        )
+        return workflow_stage.id
+            
+  
     
     async def get_workflow_stage_by_year(self, year_id: int) -> JSONResponse:
         """Get workflow stage for a specific academic year"""
@@ -63,16 +56,12 @@ class WorkflowService:
             message="Workflow stage retrieved successfully"
         )
     
-    async def increment_step(self, year_id: int) -> JSONResponse:
+    async def increment_step(self, year_id: int) -> dict:
         """Increment the current step by 1"""
         workflow_stage = await self.repository.increment_step(year_id)
         
         if not workflow_stage:
-            return ResponseFormatter.failure(
-                error="Workflow stage not found or cannot increment further",
-                message="Workflow stage not found or cannot increment further",
-                status_code=404
-            )
+            raise HTTPException(status_code=404, detail="Workflow stage not found or cannot increment further")
         
         # Create response with step name
         response_data = {
@@ -87,21 +76,14 @@ class WorkflowService:
         if workflow_stage.is_completed:
             message = "Workflow completed successfully!"
         
-        return ResponseFormatter.success(
-            data=response_data,
-            message=message
-        )
+        return response_data
     
-    async def complete_workflow(self, year_id: int) -> JSONResponse:
+    async def complete_workflow(self, year_id: int) -> dict:
         """Mark workflow as completed"""
         workflow_stage = await self.repository.complete_workflow(year_id)
         
         if not workflow_stage:
-            return ResponseFormatter.failure(
-                error="Workflow stage not found",
-                message="Workflow stage not found",
-                status_code=404
-            )
+            raise HTTPException(status_code=404, detail="Workflow stage not found")
         
         response_data = {
             "year_id": workflow_stage.year_id,
@@ -111,7 +93,4 @@ class WorkflowService:
             "total_steps": 12
         }
         
-        return ResponseFormatter.success(
-            data=response_data,
-            message="Workflow marked as completed"
-        ) 
+        return response_data

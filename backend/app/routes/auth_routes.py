@@ -17,7 +17,6 @@ from app.services.auth_services import (
 )
 from app.services.user_service import UserService
 from app.repositories.user_repository import UserRepository
-from sqlalchemy import text
 
 authRoute = APIRouter()
 
@@ -55,7 +54,7 @@ async def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
     return UserService(repository)
 
 
-@authRoute.get("/callback", response_class=RedirectResponse)
+@authRoute.get("/callback", response_class=RedirectResponse, operation_id="signin_redirect")
 async def signin_redirect(
     request: Request, service: UserService = Depends(get_user_service)
 ):
@@ -196,7 +195,7 @@ redirect to /dashboard
 """
 
 
-@authRoute.post("/signup")
+@authRoute.post("/signup", operation_id="complete_signup")
 async def complete_signup(
     signupData: signupData,
     request: Request,
@@ -279,7 +278,7 @@ async def complete_signup(
 """
 
 
-@authRoute.get("/logout")
+@authRoute.get("/logout", operation_id="logout_user")
 async def logout_user(request: Request):
     cookies = request.cookies
     session_id = cookies.get("session_id")

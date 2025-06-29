@@ -57,13 +57,13 @@ class YearBatchService:
         except ValueError as e:
             raise ValueError(str(e))
 
-    async def create_batch_for_year(self, year_id: int, data: BatchCreate):
+    async def create_batch_for_year(self, year_id: int, data: BatchCreate) -> int:
         batch_id = await self.repository.create_batch_for_year(year_id, data.section, data.noOfStudent)
-        return {"created_id": batch_id, "message": "Batch created successfully"}
+        return batch_id
 
-    async def create_subject(self, data: SubjectCreate):
+    async def create_subject(self, data: SubjectCreate) -> int:
         subject_id = await self.repository.create_subject(data.dict())
-        return {"created_id": subject_id, "message": "Subject created successfully"}
+        return subject_id
 
     async def get_subjects_by_year(self, year_id: int):
         subjects = await self.repository.get_subjects_by_year(year_id)

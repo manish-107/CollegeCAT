@@ -20,7 +20,7 @@ def role_field_doc(default: Any = ...) -> Any:
     return Field(
         default=default,
         description="Role of the user in the system",
-        examples=["HOD", "TIMETABLE_COORDINATOR", "LECTURER"],
+        examples=["HOD", "TIMETABLE_COORDINATOR", "FACULTY"],
     )
 
 
@@ -49,7 +49,7 @@ def is_active_field_doc(default: Any = ...) -> Any:
 class RoleEnum(str, enum.Enum):
     HOD = "HOD"
     TIMETABLE_COORDINATOR = "TIMETABLE_COORDINATOR"
-    LECTURER = "LECTURER"
+    FACULTY = "FACULTY"
 
 
 class UserBase(BaseModel):

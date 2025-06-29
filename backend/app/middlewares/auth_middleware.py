@@ -59,25 +59,21 @@ async def mock_auth_dependency(request: Request):
     return mock_user_data
 
 # Alternative mock with different roles for testing
-async def mock_lecturer_auth_dependency(request: Request):
+async def mock_faculty_auth_dependency(request: Request):
     """
-    Mock authentication dependency for lecturer role testing.
+    Mock authentication dependency for faculty role testing.
     """
-    mock_user_data = {
+    return {
         "user_id": 3,
-        "name": "Prof. Lecturer 1",
-        "uname": "Prof. Lecturer 1",
-        "email": "lecturer1@college.edu",
-        "role": "LECTURER",
-        "oauth_provider": "google",
-        "oauth_id": "lecturer1_google_123",
-        "joining_year": 2019,
+        "name": "Prof. Faculty 1",
+        "uname": "Prof. Faculty 1",
+        "email": "faculty1@college.edu",
+        "role": "FACULTY",
+        "joining_year": 2018,
+        "oauth_id": "faculty1_google_123",
         "is_active": True,
-        "image_url": "https://example.com/lecturer1.jpg"
+        "image_url": "https://example.com/faculty1.jpg"
     }
-    
-    request.state.user = mock_user_data
-    return mock_user_data
 
 async def mock_coordinator_auth_dependency(request: Request):
     """

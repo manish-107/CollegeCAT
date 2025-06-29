@@ -9,8 +9,6 @@ REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
 
 DATABASE_URL = os.getenv("DATABASE_URL") or ""
 
-print("DATABASE_URL:", repr(DATABASE_URL))
-
 FRONTEND_BASE_URL = "http://localhost:3001"
 
 async_url = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)

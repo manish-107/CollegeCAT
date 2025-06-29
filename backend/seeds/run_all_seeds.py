@@ -9,7 +9,7 @@ from seeds.seed_academic_years import seed_academic_years
 from seeds.seed_batches import seed_batches
 from seeds.seed_subjects import seed_subjects
 from seeds.seed_users import seed_users
-from seeds.seed_lecturer_subject_priorities import seed_lecturer_subject_priorities
+from seeds.seed_faculty_subject_priorities import seed_faculty_subject_priorities
 from seeds.sequence_utils import reset_all_sequences
 
 async def run_all_seeds():
@@ -42,10 +42,10 @@ async def run_all_seeds():
         print("✅ Users seeded successfully!")
         print()
         
-        # 5. Seed Lecturer Subject Priorities
-        print("🎯 Seeding Lecturer Subject Priorities...")
-        await seed_lecturer_subject_priorities()
-        print("✅ Lecturer Subject Priorities seeded successfully!")
+        # 5. Seed Faculty Subject Priorities
+        print("🎯 Seeding Faculty Subject Priorities...")
+        await seed_faculty_subject_priorities()
+        print("✅ Faculty Subject Priorities seeded successfully!")
         print()
         
         # 6. Final sequence reset to ensure all sequences are properly set
@@ -60,8 +60,8 @@ async def run_all_seeds():
         print("   • 2 Academic Years (2024-2025, 2025-2026)")
         print("   • 4 Batches (A & B for each year, 60 students each)")
         print("   • 16 Subjects (8 per year: 4 Core + 2 Elective + 2 Lab)")
-        print("   • 30 Users (1 HOD, 1 TIMETABLE_COORDINATOR, 28 LECTURERs)")
-        print("   • Lecturer Subject Priorities (distributed across lecturers)")
+        print("   • 30 Users (1 HOD, 1 TIMETABLE_COORDINATOR, 28 FACULTY members)")
+        print("   • Faculty Subject Priorities (distributed across faculty members)")
         print("   • All database sequences reset to prevent ID conflicts")
         
     except Exception as e:

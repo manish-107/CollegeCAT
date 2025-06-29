@@ -1,80 +1,81 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete, update
 from sqlalchemy.exc import IntegrityError
-from app.models.model import LecturerSubjectPriority, Users, Subjects, AcademicYears, Batches, LecturerSubjectAllocation
+from app.models.model import FacultySubjectPriority, Users, Subjects, AcademicYears, Batches, FacultySubjectAllocation
 from typing import List, Optional
 
-class LecturerPriorityRepository:
+class FacultyPriorityRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def submit_priorities(self, lecturer_id: int, year_id: int, priorities: List[dict]):
+    async def submit_priorities(self, faculty_id: int, year_id: int, priorities: List[dict]):
         try:
-            # Remove existing priorities for this lecturer/year
+            # Remove existing priorities for this faculty/year
             await self.db.execute(
-                delete(LecturerSubjectPriority).where(
-                    LecturerSubjectPriority.lecturer_id == lecturer_id,
-                    LecturerSubjectPriority.year_id == year_id
+                delete(FacultySubjectPriority).where(
+                    FacultySubjectPriority.faculty_id == faculty_id,
+                    FacultySubjectPriority.year_id == year_id
                 )
             )
             # Add new priorities
             for entry in priorities:
-                self.db.add(LecturerSubjectPriority(
-                    lecturer_id=lecturer_id,
+                self.db.add(FacultySubjectPriority(
+                    faculty_id=faculty_id,
                     year_id=year_id,
                     subject_id=entry['subject_id'],
                     batch_id=entry['batch_id'],
                     priority=entry['priority']
                 ))
             await self.db.commit()
-        except IntegrityError as e:
+        except Exception as e:
             await self.db.rollback()
             raise ValueError(f"Error submitting priorities: {str(e)}")
 
-    async def update_priority(self, lecturer_id: int, year_id: int, subject1_id: int, batch1_id: int, priority1: int, subject2_id: int, batch2_id: int, priority2: int):
+    async def update_priority(self, faculty_id: int, year_id: int, subject1_id: int, batch1_id: int, priority1: int, subject2_id: int, batch2_id: int, priority2: int):
         try:
             # Check if both priorities exist
             existing1 = await self.db.execute(
-                select(LecturerSubjectPriority).where(
-                    LecturerSubjectPriority.lecturer_id == lecturer_id,
-                    LecturerSubjectPriority.year_id == year_id,
-                    LecturerSubjectPriority.subject_id == subject1_id,
-                    LecturerSubjectPriority.batch_id == batch1_id
+                select(FacultySubjectPriority).where(
+                    FacultySubjectPriority.faculty_id == faculty_id,
+                    FacultySubjectPriority.year_id == year_id,
+                    FacultySubjectPriority.subject_id == subject1_id,
+                    FacultySubjectPriority.batch_id == batch1_id
                 )
             )
             existing2 = await self.db.execute(
-                select(LecturerSubjectPriority).where(
-                    LecturerSubjectPriority.lecturer_id == lecturer_id,
-                    LecturerSubjectPriority.year_id == year_id,
-                    LecturerSubjectPriority.subject_id == subject2_id,
-                    LecturerSubjectPriority.batch_id == batch2_id
+                select(FacultySubjectPriority).where(
+                    FacultySubjectPriority.faculty_id == faculty_id,
+                    FacultySubjectPriority.year_id == year_id,
+                    FacultySubjectPriority.subject_id == subject2_id,
+                    FacultySubjectPriority.batch_id == batch2_id
                 )
             )
             
             if not existing1.scalar_one_or_none():
-                raise ValueError(f"Priority not found for lecturer {lecturer_id}, year {year_id}, subject {subject1_id}, batch {batch1_id}")
+                raise ValueError(f"Priority not found for faculty {faculty_id}, year {year_id}, subject {subject1_id}, batch {batch1_id}")
             if not existing2.scalar_one_or_none():
-                raise ValueError(f"Priority not found for lecturer {lecturer_id}, year {year_id}, subject {subject2_id}, batch {batch2_id}")
+                raise ValueError(f"Priority not found for faculty {faculty_id}, year {year_id}, subject {subject2_id}, batch {batch2_id}")
             
             # Update both priorities
             await self.db.execute(
-                update(LecturerSubjectPriority).where(
-                    LecturerSubjectPriority.lecturer_id == lecturer_id,
-                    LecturerSubjectPriority.year_id == year_id,
-                    LecturerSubjectPriority.subject_id == subject1_id,
-                    LecturerSubjectPriority.batch_id == batch1_id
+                update(FacultySubjectPriority).where(
+                    FacultySubjectPriority.faculty_id == faculty_id,
+                    FacultySubjectPriority.year_id == year_id,
+                    FacultySubjectPriority.subject_id == subject1_id,
+                    FacultySubjectPriority.batch_id == batch1_id
                 ).values(priority=priority1)
             )
             await self.db.execute(
-                update(LecturerSubjectPriority).where(
-                    LecturerSubjectPriority.lecturer_id == lecturer_id,
-                    LecturerSubjectPriority.year_id == year_id,
-                    LecturerSubjectPriority.subject_id == subject2_id,
-                    LecturerSubjectPriority.batch_id == batch2_id
+                update(FacultySubjectPriority).where(
+                    FacultySubjectPriority.faculty_id == faculty_id,
+                    FacultySubjectPriority.year_id == year_id,
+                    FacultySubjectPriority.subject_id == subject2_id,
+                    FacultySubjectPriority.batch_id == batch2_id
                 ).values(priority=priority2)
             )
             await self.db.commit()
-        except IntegrityError as e:
+            return True
+        except Exception as e:
             await self.db.rollback()
             raise ValueError(f"Error updating priorities: {str(e)}")
 
@@ -82,27 +83,27 @@ class LecturerPriorityRepository:
         try:
             # Check if priority exists
             existing = await self.db.execute(
-                select(LecturerSubjectPriority).where(LecturerSubjectPriority.id == priority_id)
+                select(FacultySubjectPriority).where(FacultySubjectPriority.id == priority_id)
             )
             if not existing.scalar_one_or_none():
                 raise ValueError(f"Priority with ID {priority_id} does not exist")
             
             await self.db.execute(
-                delete(LecturerSubjectPriority).where(LecturerSubjectPriority.id == priority_id)
+                delete(FacultySubjectPriority).where(FacultySubjectPriority.id == priority_id)
             )
             await self.db.commit()
-        except IntegrityError as e:
+        except Exception as e:
             await self.db.rollback()
             raise ValueError(f"Error deleting priority: {str(e)}")
 
-    async def get_priorities_by_lecturer_and_year(self, lecturer_id: int, year_id: int) -> Optional[dict]:
+    async def get_priorities_by_faculty_and_year(self, faculty_id: int, year_id: int) -> Optional[dict]:
         result = await self.db.execute(
             select(
-                LecturerSubjectPriority,
-                Users.uname.label('lecturer_name'),
-                Users.email.label('lecturer_email'),
-                Users.role.label('lecturer_role'),
-                Users.joining_year.label('lecturer_joining_year'),
+                FacultySubjectPriority,
+                Users.uname.label('faculty_name'),
+                Users.email.label('faculty_email'),
+                Users.role.label('faculty_role'),
+                Users.joining_year.label('faculty_joining_year'),
                 Subjects.subject_name,
                 Subjects.subject_code,
                 Subjects.subject_type,
@@ -111,33 +112,33 @@ class LecturerPriorityRepository:
                 Batches.noOfStudent.label('batch_noOfStudent'),
                 AcademicYears.academic_year
             ).join(
-                Users, LecturerSubjectPriority.lecturer_id == Users.user_id
+                Users, FacultySubjectPriority.faculty_id == Users.user_id
             ).join(
-                Subjects, LecturerSubjectPriority.subject_id == Subjects.subject_id
+                Subjects, FacultySubjectPriority.subject_id == Subjects.subject_id
             ).join(
-                Batches, LecturerSubjectPriority.batch_id == Batches.batch_id
+                Batches, FacultySubjectPriority.batch_id == Batches.batch_id
             ).join(
-                AcademicYears, LecturerSubjectPriority.year_id == AcademicYears.year_id
+                AcademicYears, FacultySubjectPriority.year_id == AcademicYears.year_id
             ).where(
-                LecturerSubjectPriority.lecturer_id == lecturer_id,
-                LecturerSubjectPriority.year_id == year_id
-            ).order_by(LecturerSubjectPriority.priority)
+                FacultySubjectPriority.faculty_id == faculty_id,
+                FacultySubjectPriority.year_id == year_id
+            ).order_by(FacultySubjectPriority.priority)
         )
         rows = result.all()
         
         if not rows:
             return None
         
-        # Get lecturer and year details from first row
+        # Get faculty and year details from first row
         first_row = rows[0]
-        lecturer_data = {
+        faculty_data = {
             'year_id': year_id,
-            'year': first_row[10],  # academic_year
-            'lecturer_id': lecturer_id,
-            'uname': first_row[1],  # lecturer_name
-            'role': first_row[3].value,  # lecturer_role
-            'email': first_row[2],  # lecturer_email
-            'joining_year': first_row[4],  # lecturer_joining_year
+            'year': first_row[11],  # academic_year (index 11)
+            'faculty_id': faculty_id,
+            'uname': first_row[1],  # faculty_name
+            'role': first_row[3].value,  # faculty_role
+            'email': first_row[2],  # faculty_email
+            'joining_year': first_row[4],  # faculty_joining_year
             'batches': {}
         }
         
@@ -149,13 +150,13 @@ class LecturerPriorityRepository:
             subject_type = row[7]
             abbreviation = row[8]
             batch_section = row[9]
-            batch_noOfStudent = row[10]
+            batch_noOfStudent = row[10]  # batch_noOfStudent (index 10)
             
             batch_id = priority.batch_id
             
             # Create batch entry if not exists
-            if batch_id not in lecturer_data['batches']:
-                lecturer_data['batches'][batch_id] = {
+            if batch_id not in faculty_data['batches']:
+                faculty_data['batches'][batch_id] = {
                     'batch_id': batch_id,
                     'section': batch_section,
                     'noOfStudent': batch_noOfStudent,
@@ -163,7 +164,7 @@ class LecturerPriorityRepository:
                 }
             
             # Add subject to batch
-            lecturer_data['batches'][batch_id]['subjects'].append({
+            faculty_data['batches'][batch_id]['subjects'].append({
                 'subject_id': priority.subject_id,
                 'subject_name': subject_name,
                 'subject_code': subject_code,
@@ -173,17 +174,17 @@ class LecturerPriorityRepository:
             })
         
         # Convert batches dict to list
-        lecturer_data['batches'] = list(lecturer_data['batches'].values())
+        faculty_data['batches'] = list(faculty_data['batches'].values())
         
-        return lecturer_data
+        return faculty_data
 
-    async def get_priority_by_lecturer_year_subject_batch(self, lecturer_id: int, year_id: int, subject_id: int, batch_id: int) -> Optional[LecturerSubjectPriority]:
+    async def get_priority_by_faculty_year_subject_batch(self, faculty_id: int, year_id: int, subject_id: int, batch_id: int) -> Optional[FacultySubjectPriority]:
         result = await self.db.execute(
-            select(LecturerSubjectPriority).where(
-                LecturerSubjectPriority.lecturer_id == lecturer_id,
-                LecturerSubjectPriority.year_id == year_id,
-                LecturerSubjectPriority.subject_id == subject_id,
-                LecturerSubjectPriority.batch_id == batch_id
+            select(FacultySubjectPriority).where(
+                FacultySubjectPriority.faculty_id == faculty_id,
+                FacultySubjectPriority.year_id == year_id,
+                FacultySubjectPriority.subject_id == subject_id,
+                FacultySubjectPriority.batch_id == batch_id
             )
         )
         return result.scalar_one_or_none()
@@ -191,9 +192,9 @@ class LecturerPriorityRepository:
     async def get_all_priorities_by_year_with_details(self, year_id: int) -> List[dict]:
         result = await self.db.execute(
             select(
-                LecturerSubjectPriority,
-                Users.uname.label('lecturer_name'),
-                Users.email.label('lecturer_email'),
+                FacultySubjectPriority,
+                Users.uname.label('faculty_name'),
+                Users.email.label('faculty_email'),
                 Subjects.subject_name,
                 Subjects.subject_code,
                 Subjects.subject_type,
@@ -202,39 +203,39 @@ class LecturerPriorityRepository:
                 Batches.noOfStudent.label('batch_noOfStudent'),
                 AcademicYears.academic_year
             ).join(
-                Users, LecturerSubjectPriority.lecturer_id == Users.user_id
+                Users, FacultySubjectPriority.faculty_id == Users.user_id
             ).join(
-                Subjects, LecturerSubjectPriority.subject_id == Subjects.subject_id
+                Subjects, FacultySubjectPriority.subject_id == Subjects.subject_id
             ).join(
-                Batches, LecturerSubjectPriority.batch_id == Batches.batch_id
+                Batches, FacultySubjectPriority.batch_id == Batches.batch_id
             ).join(
-                AcademicYears, LecturerSubjectPriority.year_id == AcademicYears.year_id
+                AcademicYears, FacultySubjectPriority.year_id == AcademicYears.year_id
             ).where(
-                LecturerSubjectPriority.year_id == year_id
+                FacultySubjectPriority.year_id == year_id
             ).order_by(
-                LecturerSubjectPriority.lecturer_id,
-                LecturerSubjectPriority.priority
+                FacultySubjectPriority.faculty_id,
+                FacultySubjectPriority.priority
             )
         )
         rows = result.all()
         
-        # Group by lecturer_id
-        lecturer_priorities = {}
+        # Group by faculty_id
+        faculty_priorities = {}
         for row in rows:
-            lecturer_id = row[0].lecturer_id
+            faculty_id = row[0].faculty_id
             
-            if lecturer_id not in lecturer_priorities:
-                lecturer_priorities[lecturer_id] = {
-                    'lecturer_id': lecturer_id,
-                    'lecturer_name': row[1],
-                    'lecturer_email': row[2],
+            if faculty_id not in faculty_priorities:
+                faculty_priorities[faculty_id] = {
+                    'faculty_id': faculty_id,
+                    'faculty_name': row[1],
+                    'faculty_email': row[2],
                     'year_id': row[0].year_id,
-                    'academic_year': row[8],
+                    'academic_year': row[9],
                     'priority_subjects': []
                 }
             
-            # Add priority subject to the lecturer's list
-            lecturer_priorities[lecturer_id]['priority_subjects'].append({
+            # Add priority subject to the faculty's list
+            faculty_priorities[faculty_id]['priority_subjects'].append({
                 'id': row[0].id,
                 'subject_id': row[0].subject_id,
                 'subject_name': row[3],
@@ -248,10 +249,10 @@ class LecturerPriorityRepository:
                 'created_at': row[0].created_at
             })
         
-        return list(lecturer_priorities.values())
+        return list(faculty_priorities.values())
 
-    async def get_lecturers_with_priorities_by_year(self, year_id: int) -> List[dict]:
-        """Get all lecturers who have submitted priorities for a year, ordered by joining_year (senior first)"""
+    async def get_faculty_with_priorities_by_year(self, year_id: int) -> List[dict]:
+        """Get all faculty who have submitted priorities for a year, ordered by joining_year (senior first)"""
         result = await self.db.execute(
             select(
                 Users.user_id,
@@ -259,10 +260,10 @@ class LecturerPriorityRepository:
                 Users.email,
                 Users.joining_year
             ).join(
-                LecturerSubjectPriority, Users.user_id == LecturerSubjectPriority.lecturer_id
+                FacultySubjectPriority, Users.user_id == FacultySubjectPriority.faculty_id
             ).where(
-                LecturerSubjectPriority.year_id == year_id
-            ).distinct().order_by(Users.joining_year.asc())  # Senior lecturers first
+                FacultySubjectPriority.year_id == year_id
+            ).distinct().order_by(Users.joining_year.asc())  # Senior faculty first
         )
         rows = result.all()
         
@@ -276,18 +277,18 @@ class LecturerPriorityRepository:
             for row in rows
         ]
 
-    async def get_priorities_by_lecturer_year(self, lecturer_id: int, year_id: int) -> List[dict]:
-        """Get all priorities for a lecturer in a year, ordered by priority"""
+    async def get_priorities_by_faculty_year(self, faculty_id: int, year_id: int) -> List[dict]:
+        """Get all priorities for a faculty in a year, ordered by priority"""
         result = await self.db.execute(
             select(
-                LecturerSubjectPriority.id,
-                LecturerSubjectPriority.subject_id,
-                LecturerSubjectPriority.batch_id,
-                LecturerSubjectPriority.priority
+                FacultySubjectPriority.id,
+                FacultySubjectPriority.subject_id,
+                FacultySubjectPriority.batch_id,
+                FacultySubjectPriority.priority
             ).where(
-                LecturerSubjectPriority.lecturer_id == lecturer_id,
-                LecturerSubjectPriority.year_id == year_id
-            ).order_by(LecturerSubjectPriority.priority)
+                FacultySubjectPriority.faculty_id == faculty_id,
+                FacultySubjectPriority.year_id == year_id
+            ).order_by(FacultySubjectPriority.priority)
         )
         rows = result.all()
         
@@ -304,18 +305,18 @@ class LecturerPriorityRepository:
     async def is_subject_batch_allocated(self, subject_id: int, batch_id: int, year_id: int) -> bool:
         """Check if a subject-batch combination is already allocated"""
         result = await self.db.execute(
-            select(LecturerSubjectAllocation).where(
-                LecturerSubjectAllocation.subject_id == subject_id,
-                LecturerSubjectAllocation.batch_id == batch_id,
-                LecturerSubjectAllocation.year_id == year_id
+            select(FacultySubjectAllocation).where(
+                FacultySubjectAllocation.subject_id == subject_id,
+                FacultySubjectAllocation.batch_id == batch_id,
+                FacultySubjectAllocation.year_id == year_id
             )
         )
         return result.scalar_one_or_none() is not None
 
-    async def create_allocation(self, lecturer_id: int, subject_id: int, batch_id: int, year_id: int, allocated_priority: int):
+    async def create_allocation(self, faculty_id: int, subject_id: int, batch_id: int, year_id: int, allocated_priority: int):
         """Create a new allocation"""
-        allocation = LecturerSubjectAllocation(
-            lecturer_id=lecturer_id,
+        allocation = FacultySubjectAllocation(
+            faculty_id=faculty_id,
             subject_id=subject_id,
             batch_id=batch_id,
             year_id=year_id,
@@ -330,9 +331,9 @@ class LecturerPriorityRepository:
         """Get all allocations for a year with detailed information"""
         result = await self.db.execute(
             select(
-                LecturerSubjectAllocation,
-                Users.uname.label('lecturer_name'),
-                Users.email.label('lecturer_email'),
+                FacultySubjectAllocation,
+                Users.uname.label('faculty_name'),
+                Users.email.label('faculty_email'),
                 Subjects.subject_name,
                 Subjects.subject_code,
                 Subjects.subject_type,
@@ -341,17 +342,17 @@ class LecturerPriorityRepository:
                 Batches.noOfStudent.label('batch_noOfStudent'),
                 AcademicYears.academic_year
             ).join(
-                Users, LecturerSubjectAllocation.lecturer_id == Users.user_id
+                Users, FacultySubjectAllocation.faculty_id == Users.user_id
             ).join(
-                Subjects, LecturerSubjectAllocation.subject_id == Subjects.subject_id
+                Subjects, FacultySubjectAllocation.subject_id == Subjects.subject_id
             ).join(
-                Batches, LecturerSubjectAllocation.batch_id == Batches.batch_id
+                Batches, FacultySubjectAllocation.batch_id == Batches.batch_id
             ).join(
-                AcademicYears, LecturerSubjectAllocation.year_id == AcademicYears.year_id
+                AcademicYears, FacultySubjectAllocation.year_id == AcademicYears.year_id
             ).where(
-                LecturerSubjectAllocation.year_id == year_id
+                FacultySubjectAllocation.year_id == year_id
             ).order_by(
-                LecturerSubjectAllocation.lecturer_id
+                FacultySubjectAllocation.faculty_id
             )
         )
         rows = result.all()
@@ -359,9 +360,9 @@ class LecturerPriorityRepository:
         return [
             {
                 'allocation_id': row[0].allocation_id,
-                'lecturer_id': row[0].lecturer_id,
-                'lecturer_name': row[1],
-                'lecturer_email': row[2],
+                'faculty_id': row[0].faculty_id,
+                'faculty_name': row[1],
+                'faculty_email': row[2],
                 'subject_id': row[0].subject_id,
                 'subject_name': row[3],
                 'subject_code': row[4],
@@ -381,32 +382,32 @@ class LecturerPriorityRepository:
     async def clear_allocations_for_year(self, year_id: int):
         """Clear all allocations for a specific year"""
         await self.db.execute(
-            delete(LecturerSubjectAllocation).where(LecturerSubjectAllocation.year_id == year_id)
+            delete(FacultySubjectAllocation).where(FacultySubjectAllocation.year_id == year_id)
         )
         await self.db.commit()
 
-    async def get_all_priorities_by_year_ordered(self, year_id: int) -> List[dict]:
-        """Get all priorities for a year ordered by lecturer seniority and priority level"""
+    async def get_priorities_by_year_ordered(self, year_id: int) -> List[dict]:
+        """Get all priorities for a year ordered by faculty seniority and priority level"""
         result = await self.db.execute(
             select(
-                LecturerSubjectPriority,
-                Users.uname.label('lecturer_name'),
+                FacultySubjectPriority,
+                Users.uname.label('faculty_name'),
                 Users.joining_year
             ).join(
-                Users, LecturerSubjectPriority.lecturer_id == Users.user_id
+                Users, FacultySubjectPriority.faculty_id == Users.user_id
             ).where(
-                LecturerSubjectPriority.year_id == year_id
+                FacultySubjectPriority.year_id == year_id
             ).order_by(
-                Users.joining_year.asc(),  # Senior lecturers first
-                LecturerSubjectPriority.priority.asc()  # Priority 1, 2, 3, 4, 5
+                Users.joining_year.asc(),  # Senior faculty first
+                FacultySubjectPriority.priority.asc()  # Priority 1, 2, 3, 4, 5
             )
         )
         rows = result.all()
         
         return [
             {
-                'lecturer_id': row[0].lecturer_id,
-                'lecturer_name': row[1],
+                'faculty_id': row[0].faculty_id,
+                'faculty_name': row[1],
                 'joining_year': row[2],
                 'subject_id': row[0].subject_id,
                 'batch_id': row[0].batch_id,
@@ -416,15 +417,14 @@ class LecturerPriorityRepository:
         ]
 
     async def get_allocations_grouped_by_year_batch_subject(self, year_id: int) -> List[dict]:
-        """Get allocations grouped by year, batches, and subjects with allocated lecturers"""
-        # First get all allocations with details
+        """Get allocations grouped by year, batches, and subjects with allocated faculty"""
         result = await self.db.execute(
             select(
-                LecturerSubjectAllocation,
-                Users.uname.label('lecturer_name'),
-                Users.email.label('lecturer_email'),
-                Users.role.label('lecturer_role'),
-                Users.joining_year.label('lecturer_joining_year'),
+                FacultySubjectAllocation,
+                Users.uname.label('faculty_name'),
+                Users.email.label('faculty_email'),
+                Users.role.label('faculty_role'),
+                Users.joining_year.label('faculty_joining_year'),
                 Subjects.subject_name,
                 Subjects.subject_code,
                 Subjects.subject_type,
@@ -433,15 +433,15 @@ class LecturerPriorityRepository:
                 Batches.noOfStudent.label('batch_noOfStudent'),
                 AcademicYears.academic_year
             ).join(
-                Users, LecturerSubjectAllocation.lecturer_id == Users.user_id
+                Users, FacultySubjectAllocation.faculty_id == Users.user_id
             ).join(
-                Subjects, LecturerSubjectAllocation.subject_id == Subjects.subject_id
+                Subjects, FacultySubjectAllocation.subject_id == Subjects.subject_id
             ).join(
-                Batches, LecturerSubjectAllocation.batch_id == Batches.batch_id
+                Batches, FacultySubjectAllocation.batch_id == Batches.batch_id
             ).join(
-                AcademicYears, LecturerSubjectAllocation.year_id == AcademicYears.year_id
+                AcademicYears, FacultySubjectAllocation.year_id == AcademicYears.year_id
             ).where(
-                LecturerSubjectAllocation.year_id == year_id
+                FacultySubjectAllocation.year_id == year_id
             ).order_by(
                 Batches.batch_id,
                 Subjects.subject_id
@@ -454,10 +454,10 @@ class LecturerPriorityRepository:
         
         for row in rows:
             allocation = row[0]
-            lecturer_name = row[1]
-            lecturer_email = row[2]
-            lecturer_role = row[3]
-            lecturer_joining_year = row[4]
+            faculty_name = row[1]
+            faculty_email = row[2]
+            faculty_role = row[3]
+            faculty_joining_year = row[4]
             subject_name = row[5]
             subject_code = row[6]
             subject_type = row[7]
@@ -491,12 +491,12 @@ class LecturerPriorityRepository:
                     'subject_code': subject_code,
                     'subject_type': subject_type.value,
                     'abbreviation': abbreviation,
-                    'allocated_lecturer': {
-                        'lecturer_id': allocation.lecturer_id,
-                        'uname': lecturer_name,
-                        'role': lecturer_role.value,
-                        'email': lecturer_email,
-                        'joining_year': lecturer_joining_year
+                    'allocated_faculty': {
+                        'faculty_id': allocation.faculty_id,
+                        'uname': faculty_name,
+                        'role': faculty_role.value,
+                        'email': faculty_email,
+                        'joining_year': faculty_joining_year
                     }
                 }
         
@@ -528,22 +528,21 @@ class LecturerPriorityRepository:
         
         return final_result
 
-    async def get_allocation_by_id(self, allocation_id: int) -> Optional[LecturerSubjectAllocation]:
+    async def get_allocation_by_id(self, allocation_id: int) -> Optional[FacultySubjectAllocation]:
         """Get allocation by ID"""
         result = await self.db.execute(
-            select(LecturerSubjectAllocation).where(LecturerSubjectAllocation.allocation_id == allocation_id)
+            select(FacultySubjectAllocation).where(FacultySubjectAllocation.allocation_id == allocation_id)
         )
         return result.scalar_one_or_none()
 
-    async def update_allocation_lecturer(self, allocation_id: int, lecturer_id: int) -> Optional[LecturerSubjectAllocation]:
-        """Update the lecturer for a specific allocation"""
+    async def update_allocation_faculty(self, allocation_id: int, faculty_id: int) -> Optional[FacultySubjectAllocation]:
+        """Update the faculty for a specific allocation"""
         await self.db.execute(
-            update(LecturerSubjectAllocation)
-            .where(LecturerSubjectAllocation.allocation_id == allocation_id)
-            .values(lecturer_id=lecturer_id)
+            update(FacultySubjectAllocation)
+            .where(FacultySubjectAllocation.allocation_id == allocation_id)
+            .values(faculty_id=faculty_id)
         )
         await self.db.commit()
         
         # Return the updated allocation
-        updated_allocation = await self.get_allocation_by_id(allocation_id)
-        return updated_allocation 
+        return await self.get_allocation_by_id(allocation_id) 

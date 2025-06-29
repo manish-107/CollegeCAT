@@ -1,6 +1,7 @@
 import asyncio
 import sys
 import os
+import random
 
 # Add the parent directory to the path so we can import from app
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -43,18 +44,19 @@ async def seed_users():
                 }
             ]
             
-            # Add 28 LECTURERs
+            # Add 28 FACULTY members
             for i in range(1, 29):
-                users_data.append({
+                user_data = {
                     "user_id": i + 2,  # Start from 3 (after HOD and coordinator)
-                    "uname": f"Prof. Lecturer {i}",
-                    "email": f"lecturer{i}@college.edu",
-                    "role": RoleEnum.LECTURER,
+                    "uname": f"Prof. Faculty {i}",
+                    "email": f"faculty{i}@college.edu",
+                    "role": RoleEnum.FACULTY,
                     "oauth_provider": "google",
-                    "oauth_id": f"lecturer{i}_google_123",
+                    "oauth_id": f"faculty{i}_google_123",
                     "joining_year": 2018 + (i % 8),  # Different joining years from 2018-2025
                     "is_active": True
-                })
+                }
+                users_data.append(user_data)
             
             for user_data in users_data:
                 if user_data["email"] not in existing_emails:
@@ -67,7 +69,7 @@ async def seed_users():
             await db.commit()
             print("Users seeding completed successfully!")
             print(f"Total users created: {len(users_data)}")
-            print(f"Breakdown: 1 HOD, 1 TIMETABLE_COORDINATOR, 28 LECTURERs")
+            print(f"Breakdown: 1 HOD, 1 TIMETABLE_COORDINATOR, 28 FACULTY members")
             
             # Reset the sequence after seeding
             print("🔄 Resetting users sequence...")

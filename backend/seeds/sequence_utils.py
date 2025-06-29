@@ -39,7 +39,7 @@ async def reset_all_sequences():
         ("academicyears", "year_id"),
         ("batches", "batch_id"),
         ("subjects", "subject_id"),
-        ("lecturer_subject_priorities", "id"),
+        ("faculty_subject_priorities", "id"),
         ("timetablehourformats", "format_id"),
         ("timetables", "timetable_id")
     ]

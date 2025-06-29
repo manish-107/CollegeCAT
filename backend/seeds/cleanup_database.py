@@ -6,12 +6,12 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.models.model import (
-    LecturerSubjectAllocation, LecturerSubjectPriority, LecturerPreferences,
-    LecturerSubAssignments, TimetableHourFormats, Timetable, Approvals,
-    Users, Subjects, Batches, AcademicYears, WorkflowStage
+    Users, AcademicYears, Batches, Subjects,
+    FacultySubjectAllocation, FacultySubjectPriority, FacultyPreferences,
+    FacultySubAssignments, TimetableHourFormats, Timetable, Approvals,
+    WorkflowStage
 )
 from app.db.postgres_client import get_db
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import delete
 
 async def cleanup_database():
@@ -24,13 +24,13 @@ async def cleanup_database():
             # Clean up in reverse order of dependencies (respect foreign key constraints)
             
             # 1. Clean up allocations (depends on priorities, users, subjects, batches, years)
-            print("🗑️ Cleaning up Lecturer Subject Allocations...")
-            result = await db.execute(delete(LecturerSubjectAllocation))
+            print("🗑️ Cleaning up Faculty Subject Allocations...")
+            result = await db.execute(delete(FacultySubjectAllocation))
             print(f"   Deleted {result.rowcount} allocations")
             
-            # 2. Clean up lecturer subject priorities (depends on users, subjects, batches, years)
-            print("🗑️ Cleaning up Lecturer Subject Priorities...")
-            result = await db.execute(delete(LecturerSubjectPriority))
+            # 2. Clean up faculty subject priorities (depends on users, subjects, batches, years)
+            print("🗑️ Cleaning up Faculty Subject Priorities...")
+            result = await db.execute(delete(FacultySubjectPriority))
             print(f"   Deleted {result.rowcount} priorities")
             
             # 3. Clean up approvals (depends on timetables, users)
@@ -48,14 +48,14 @@ async def cleanup_database():
             result = await db.execute(delete(TimetableHourFormats))
             print(f"   Deleted {result.rowcount} timetable formats")
             
-            # 6. Clean up lecturer sub assignments (depends on users, subjects, batches, years)
-            print("🗑️ Cleaning up Lecturer Sub Assignments...")
-            result = await db.execute(delete(LecturerSubAssignments))
+            # 6. Clean up faculty sub assignments (depends on users, subjects, batches, years)
+            print("🗑️ Cleaning up Faculty Sub Assignments...")
+            result = await db.execute(delete(FacultySubAssignments))
             print(f"   Deleted {result.rowcount} assignments")
             
-            # 7. Clean up lecturer preferences (depends on users, subjects, years)
-            print("🗑️ Cleaning up Lecturer Preferences...")
-            result = await db.execute(delete(LecturerPreferences))
+            # 7. Clean up faculty preferences (depends on users, subjects, years)
+            print("🗑️ Cleaning up Faculty Preferences...")
+            result = await db.execute(delete(FacultyPreferences))
             print(f"   Deleted {result.rowcount} preferences")
             
             # 8. Clean up users (but keep system users if any)
@@ -106,8 +106,8 @@ async def cleanup_specific_tables():
             
             # Clean up only the main seeded tables
             tables_to_clean = [
-                ("Lecturer Subject Allocations", LecturerSubjectAllocation),
-                ("Lecturer Subject Priorities", LecturerSubjectPriority),
+                ("Faculty Subject Allocations", FacultySubjectAllocation),
+                ("Faculty Subject Priorities", FacultySubjectPriority),
                 ("Users", Users),
                 ("Subjects", Subjects),
                 ("Batches", Batches),
