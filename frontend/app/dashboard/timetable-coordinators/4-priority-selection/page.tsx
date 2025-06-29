@@ -3,157 +3,183 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-
-interface Preference {
-  subjectCode: string;
-  subjectName: string;
-  type: 'core' | 'elective' | 'lab' | 'project';
-}
-
-interface Lecturer {
-  lecturerId: string;
-  lecturerName: string;
-  department: string;
-  preferences?: Preference[]; // Optional for not-submitted
-}
-
-// All lecturers (some have not submitted)
-const allLecturers: Lecturer[] = [
-  {
-    lecturerId: 'lect1',
-    lecturerName: 'Dr. Smith',
-    department: 'CSE',
-    preferences: [
-      { subjectCode: 'CS101', subjectName: 'Intro to CS', type: 'core' },
-      { subjectCode: 'CS201', subjectName: 'Data Structures', type: 'core' },
-      { subjectCode: 'CS401', subjectName: 'AI Basics', type: 'elective' },
-      { subjectCode: 'CS501', subjectName: 'ML', type: 'elective' },
-    ],
-  },
-  {
-    lecturerId: 'lect2',
-    lecturerName: 'Prof. Patel',
-    department: 'Maths',
-    preferences: [
-      { subjectCode: 'MA101', subjectName: 'Calculus I', type: 'core' },
-      { subjectCode: 'MA201', subjectName: 'Linear Algebra', type: 'core' },
-      { subjectCode: 'MA301', subjectName: 'Probability', type: 'elective' },
-    ],
-  },
-  {
-    lecturerId: 'lect3',
-    lecturerName: 'Dr. Allen',
-    department: 'CSE',
-    preferences: [
-      { subjectCode: 'CS101', subjectName: 'Intro to CS', type: 'core' },
-      { subjectCode: 'CS202', subjectName: 'Computer Networks', type: 'core' },
-      { subjectCode: 'CS303', subjectName: 'Web Development', type: 'elective' },
-    ],
-  },
-  // Not submitted
-  {
-    lecturerId: 'lect4',
-    lecturerName: 'Dr. Rao',
-    department: 'Physics',
-  },
-  {
-    lecturerId: 'lect5',
-    lecturerName: 'Prof. Mehta',
-    department: 'Chemistry',
-  },
-];
-
-const getTypeColor = (type: Preference['type']) => {
-  switch (type) {
-    case 'core': return 'bg-blue-100 text-blue-800';
-    case 'elective': return 'bg-green-100 text-green-800';
-    case 'lab': return 'bg-purple-100 text-purple-800';
-    case 'project': return 'bg-orange-100 text-orange-800';
-    default: return 'bg-gray-100 text-gray-800';
-  }
-};
-
-const getTypeLabel = (type: Preference['type']) => {
-  switch (type) {
-    case 'core': return 'Core';
-    case 'elective': return 'Elective';
-    case 'lab': return 'Lab';
-    case 'project': return 'Project';
-    default: return 'Unknown';
-  }
-};
+import { Loader2 } from 'lucide-react';
+import { useYearBatch } from '@/app/dashboard/context/YearBatchContext';
+import { useQuery } from '@tanstack/react-query';
+import { 
+  getAllPrioritiesByYearOptions,
+  getYearsWithBatchesOptions
+} from '@/app/client/@tanstack/react-query.gen';
+import type { 
+  FacultyPriorityWithDetailsResponse, 
+  PrioritySubjectResponse 
+} from '@/app/client/types.gen';
 
 export default function PrioritySelectionPage() {
-  const [selectedLecturer, setSelectedLecturer] = useState<string | null>(null);
+  const { selectedYear } = useYearBatch();
+  const [selectedLecturer, setSelectedLecturer] = useState<number | null>(null);
 
-  // Split lecturers into submitted and not submitted
-  const submitted = allLecturers.filter((l) => l.preferences && l.preferences.length > 0);
-  const notSubmitted = allLecturers.filter((l) => !l.preferences || l.preferences.length === 0);
+  // Fetch academic years to get year_id
+  const { data: yearsData } = useQuery(getYearsWithBatchesOptions());
+  const selectedYearData = yearsData?.items?.find(item => item.academic_year === selectedYear);
+  const yearId = selectedYearData?.year_id;
 
-  const handleLecturerClick = (lecturerId: string) => {
-    setSelectedLecturer(selectedLecturer === lecturerId ? null : lecturerId);
+  // Fetch priorities for the selected year
+  const { 
+    data: prioritiesData, 
+    isLoading, 
+    error: fetchError 
+  } = useQuery({
+    ...getAllPrioritiesByYearOptions({ path: { year_id: yearId! } }),
+    enabled: !!yearId
+  });
+
+  const priorities = prioritiesData?.priorities || [];
+
+  // Split faculty into submitted and not submitted
+  const submitted = priorities.filter((faculty) => faculty.priority_subjects && faculty.priority_subjects.length > 0);
+  const notSubmitted = priorities.filter((faculty) => !faculty.priority_subjects || faculty.priority_subjects.length === 0);
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'CORE': return 'bg-blue-100 text-blue-800';
+      case 'ELECTIVE': return 'bg-green-100 text-green-800';
+      case 'LAB': return 'bg-purple-100 text-purple-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
   };
 
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'CORE': return 'Core';
+      case 'ELECTIVE': return 'Elective';
+      case 'LAB': return 'Lab';
+      default: return 'Unknown';
+    }
+  };
+
+  const handleLecturerClick = (facultyId: number) => {
+    setSelectedLecturer(selectedLecturer === facultyId ? null : facultyId);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="p-6 max-w-2xl mx-auto space-y-12">
+        <div className="flex items-center justify-center py-8">
+          <div className="flex items-center gap-2">
+            <Loader2 className="w-6 h-6 animate-spin" />
+            <span>Loading priorities...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="p-6 max-w-2xl mx-auto space-y-12">
+        <div className="text-center py-8">
+          <div className="text-red-700">
+            <strong>Error:</strong> Failed to fetch priorities. Please try again.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6 max-w-2xl mx-auto space-y-12">
+    <div className="p-6 max-w-5xl mx-auto space-y-12">
       <h2 className="text-2xl font-bold mb-6 text-center">Lecturer Priority Selection</h2>
+      
+      {/* Year Context */}
+      <Card className="bg-blue-50 border-blue-200">
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-blue-900">Current Context</h3>
+              <div className="text-sm text-blue-700 mt-1">
+                <span className="font-medium">Academic Year:</span> {selectedYear || 'Not selected'}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm text-blue-600">Priorities loaded from API</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Submitted Section */}
       <div className="space-y-2">
         <h3 className="text-lg font-semibold mb-2">Preferences Submitted</h3>
-        <div className="grid grid-cols-1 gap-6">
-          {submitted.map((lect) => (
-            <Card
-              key={lect.lecturerId}
-              className={`transition-all duration-200 border-2 ${selectedLecturer === lect.lecturerId ? 'border-primary shadow-lg' : 'border-primary hover:shadow'} cursor-pointer`}
-              onClick={() => handleLecturerClick(lect.lecturerId)}
-            >
-              <CardHeader className="flex flex-row items-center justify-between gap-2">
-                <CardTitle className="text-lg flex flex-col">
-                  <span>{lect.lecturerName}</span>
-                </CardTitle>
-                <span className="rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-semibold">
-                  {selectedLecturer === lect.lecturerId ? 'Hide Preferences' : 'Show Preferences'}
-                </span>
-              </CardHeader>
-              {selectedLecturer === lect.lecturerId && (
-                <>
-                  <hr className="my-2 border-muted" />
-                  <CardContent>
-                    <Label className="mb-3 block text-base font-semibold">Subject Priority List</Label>
-                    <div className="space-y-3">
-                      {lect.preferences!.map((pref, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center gap-4 p-3 rounded-lg border bg-muted/50 shadow-sm"
-                        >
-                          <span className="w-7 h-7 flex items-center justify-center rounded-full bg-primary text-primary-foreground font-bold mr-2">
-                            {idx + 1}
-                          </span>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(pref.type)}`}>{getTypeLabel(pref.type)}</span>
-                          <span className="px-2 py-1 rounded-full text-xs font-mono bg-gray-100 text-gray-700 border border-gray-200 ml-2">
-                            {pref.subjectCode}
-                          </span>
-                          <span className="font-semibold ml-2">{pref.subjectName}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </>
-              )}
-            </Card>
-          ))}
-        </div>
+        {submitted.length === 0 ? (
+          <p className="text-muted-foreground italic">No faculty have submitted their preferences yet.</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-6">
+            {submitted.map((faculty) => (
+              <Card
+                key={faculty.faculty_id}
+                className={`transition-all duration-200 border-2 ${selectedLecturer === faculty.faculty_id ? 'border-primary shadow-lg' : 'border-primary hover:shadow'} cursor-pointer`}
+                onClick={() => handleLecturerClick(faculty.faculty_id)}
+              >
+                <CardHeader className="flex flex-row items-center justify-between gap-2">
+                  <CardTitle className="text-lg flex flex-col">
+                    <span>{faculty.faculty_name}</span>
+                    <span className="text-sm text-muted-foreground">{faculty.faculty_email}</span>
+                  </CardTitle>
+                  <span className="rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-semibold">
+                    {selectedLecturer === faculty.faculty_id ? 'Hide Preferences' : 'Show Preferences'}
+                  </span>
+                </CardHeader>
+                {selectedLecturer === faculty.faculty_id && (
+                  <>
+                    <hr className="my-2 border-muted" />
+                    <CardContent>
+                      <Label className="mb-3 block text-base font-semibold">Subject Priority List</Label>
+                      <div className="grid grid-cols-1 gap-3">
+                        {faculty.priority_subjects
+                          .sort((a, b) => a.priority - b.priority)
+                          .map((subject, idx) => (
+                          <div
+                            key={subject.id}
+                            className="flex items-center gap-3 p-3 rounded-lg border bg-muted/50 shadow-sm"
+                          >
+                            <span className="w-6 h-6 flex items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-xs">
+                              {subject.priority}
+                            </span>
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-2">
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(subject.subject_type)}`}>
+                                  {getTypeLabel(subject.subject_type)}
+                                </span>
+                                <span className="px-2 py-1 rounded-full text-xs font-mono bg-gray-100 text-gray-700 border border-gray-200">
+                                  {subject.subject_code}
+                                </span>
+                              </div>
+                              <span className="font-semibold text-sm">{subject.subject_name}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </>
+                )}
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
+
       {/* Not Submitted Section */}
       <div className="space-y-2 mt-8">
         <h3 className="text-lg font-semibold mb-2">Preferences Not Submitted</h3>
         {notSubmitted.length === 0 ? (
-          <p className="text-muted-foreground italic">All lecturers have submitted their preferences.</p>
+          <p className="text-muted-foreground italic">All faculty have submitted their preferences.</p>
         ) : (
           <ul className="space-y-2">
-            {notSubmitted.map((lect) => (
-              <li key={lect.lecturerId} className="border rounded p-3 bg-muted/50 flex flex-col">
-                <span className="font-semibold">{lect.lecturerName}</span>
+            {notSubmitted.map((faculty) => (
+              <li key={faculty.faculty_id} className="border rounded p-3 bg-muted/50 flex flex-col">
+                <span className="font-semibold">{faculty.faculty_name}</span>
+                <span className="text-sm text-muted-foreground">{faculty.faculty_email}</span>
               </li>
             ))}
           </ul>

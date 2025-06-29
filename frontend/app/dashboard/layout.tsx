@@ -1,7 +1,12 @@
-export default function Layout({ children }) {
+import { YearBatchProvider } from './context/YearBatchContext';
+import QueryProvider from '../providers/QueryProvider';
+
+export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <>
-      <main>{children}</main>
-    </>
+    <QueryProvider>
+      <YearBatchProvider>
+        <main>{children}</main>
+      </YearBatchProvider>
+    </QueryProvider>
   )
 }

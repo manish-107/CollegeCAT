@@ -1,13 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardHeader,
   CardTitle,
   CardContent,
 } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -16,205 +15,485 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
+import { Loader2, Save, Send } from 'lucide-react';
+import { useYearBatch } from '@/app/dashboard/context/YearBatchContext';
+import { useQuery } from '@tanstack/react-query';
+import { 
+  getYearsWithBatchesOptions,
+  getTimetableFormatsByYearAndBatchOptions,
+  getSubjectsByYearOptions,
+  getAllocationsByYearOptions
+} from '@/app/client/@tanstack/react-query.gen';
+import { toast } from 'sonner';
 
-type TimetableSlot = {
-  type: 'class' | 'lab' | 'break';
-  subject?: string;
-};
+type PeriodType = 'empty' | 'class' | 'lab' | 'break';
 
-type Timetable = {
-  [day: string]: TimetableSlot[];
-};
+interface Period {
+  type: PeriodType;
+  startTime: string;
+  endTime: string;
+  isBreak: boolean;
+  selectedSubject?: string;
+  selectedLecturer?: string;
+}
+
+interface TimetableDay {
+  day: string;
+  periods: Period[];
+}
 
 const timeSlots = [
-  '9:00 AM - 10:00 AM',
-  '10:00 AM - 11:00 AM',
-  '11:00 AM - 12:00 PM',
-  '12:00 PM - 1:00 PM',
-  '1:00 PM - 2:00 PM',
-  '2:00 PM - 3:00 PM',
-  '3:00 PM - 4:00 PM',
-  '4:00 PM - 5:00 PM',
+  '9:00 AM - 9:55 AM',
+  '9:55 AM - 10:50 AM',
+  '10:50 AM - 11:05 AM', // Morning break
+  '11:05 AM - 12:00 PM',
+  '12:00 PM - 12:55 PM',
+  '12:55 PM - 2:00 PM', // Lunch break
+  '2:00 PM - 2:55 PM',
+  '2:55 PM - 3:50 PM',
+  '3:50 PM - 5:00 PM',
 ];
 
-const generateDummyTimetable = (): Timetable => {
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-  const subjects = ['Math', 'AI', 'DSA', 'Cloud', 'ML', 'Networks', 'Elective'];
-  const labSubjects = ['OS Lab', 'AI Lab', 'DB Lab', 'Network Lab'];
-  const timetable: Timetable = {};
+export default function CreateTimetablePage() {
+  const { selectedYear, selectedBatch } = useYearBatch();
+  const [timetable, setTimetable] = useState<TimetableDay[] | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
-  let labCount = 0;
+  // Fetch academic years to get year_id
+  const { data: yearsData } = useQuery(getYearsWithBatchesOptions());
+  const selectedYearData = yearsData?.items?.find(item => item.academic_year === selectedYear);
+  const yearId = selectedYearData?.year_id;
 
-  for (const day of days) {
-    const slots: TimetableSlot[] = Array(8).fill(null).map(() => ({
-      type: 'class',
-      subject: subjects[Math.floor(Math.random() * subjects.length)],
-    }));
+  // Fetch timetable formats for the selected year and batch
+  const { data: formatsData } = useQuery({
+    ...getTimetableFormatsByYearAndBatchOptions({ 
+      path: { year_id: yearId!, batch_id: selectedBatch?.batch_id! } 
+    }),
+    enabled: !!yearId && !!selectedBatch?.batch_id
+  });
 
-    // Apply lab only if under max weekly limit and not yet applied today
-    if (labCount < 3) {
-      const possibleStartIndexes = [0, 1, 2, 3, 4]; // ensures room for 3 periods
-      const startIdx = possibleStartIndexes[Math.floor(Math.random() * possibleStartIndexes.length)];
+  // Fetch subjects for the selected year
+  const { data: subjectsData } = useQuery({
+    ...getSubjectsByYearOptions({ path: { year_id: yearId! } }),
+    enabled: !!yearId
+  });
 
-      // Check if slots are free for lab placement
-      const canPlaceLab = slots.slice(startIdx, startIdx + 3).every((s) => s.type === 'class');
-      if (canPlaceLab) {
-        const labSubject = labSubjects[labCount % labSubjects.length];
-        for (let i = 0; i < 3; i++) {
-          slots[startIdx + i] = {
-            type: 'lab',
-            subject: labSubject,
+  // Fetch allocations for the selected year
+  const { data: allocationsData } = useQuery({
+    ...getAllocationsByYearOptions({ path: { year_id: yearId! } }),
+    enabled: !!yearId
+  });
+
+  // Helper function to check if a subject is a lab subject
+  const isLabSubject = (subject: any) => {
+    return subject.subject_type === 'LAB' || 
+           subject.subject_type === 'Lab' || 
+           subject.subject_type === 'lab' ||
+           subject.subject_name.toLowerCase().includes('lab') ||
+           subject.subject_code.toLowerCase().includes('lab');
+  };
+
+  const subjects = subjectsData?.subjects || [];
+  const allocations = allocationsData?.allocations || [];
+
+  // Filter allocations for the selected batch
+  const batchAllocations = selectedBatch 
+    ? allocations.filter(allocation => allocation.batch_section === selectedBatch.section)
+    : [];
+
+  // Initialize timetable from format
+  const initializeTimetableFromFormat = (formatData: any) => {
+    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+    const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    
+    return dayNames.map((dayName, dayIndex) => {
+      const dayKey = days[dayIndex];
+      const periodsData = formatData[dayKey] || [];
+      
+      return {
+        day: dayName,
+        periods: periodsData.map((periodType: number, periodIndex: number) => {
+          const isBreak = periodIndex === 2 || periodIndex === 5; // Morning and lunch breaks
+          
+          let periodTypeEnum: PeriodType = 'empty';
+          if (isBreak) {
+            periodTypeEnum = 'break';
+          } else if (periodType === 1) {
+            periodTypeEnum = 'class';
+          } else if (periodType === 3) {
+            periodTypeEnum = 'lab';
+          } else if (periodType === 0) {
+            periodTypeEnum = 'empty';
+          }
+          
+          return {
+            type: periodTypeEnum,
+            startTime: timeSlots[periodIndex].split(' - ')[0],
+            endTime: timeSlots[periodIndex].split(' - ')[1],
+            isBreak,
+            selectedSubject: undefined,
+            selectedLecturer: undefined,
           };
+        })
+      };
+    });
+  };
+
+  // Load timetable format when available
+  useEffect(() => {
+    if (formatsData && formatsData.length > 0) {
+      const format = formatsData[0]; // Use the first format
+      console.log('Timetable format data:', format.format_data);
+      const initializedTimetable = initializeTimetableFromFormat(format.format_data);
+      console.log('Initialized timetable:', initializedTimetable);
+      setTimetable(initializedTimetable);
+    }
+  }, [formatsData]);
+
+  const handleSubjectChange = (dayIndex: number, periodIndex: number, subjectId: string) => {
+    if (!timetable) return;
+
+    const updatedTimetable = [...timetable];
+    const day = updatedTimetable[dayIndex];
+    const period = day.periods[periodIndex];
+    
+    if (period.isBreak) return;
+
+    // Find the selected subject
+    const selectedSubject = subjects.find(s => s.subject_id.toString() === subjectId);
+    
+    if (selectedSubject) {
+      // For lab periods, apply to all 3 consecutive lab periods
+      if (period.type === 'lab') {
+        // Find the start of the lab block
+        let start = periodIndex;
+        for (let i = periodIndex - 1; i >= 0; i--) {
+          if (day.periods[i]?.type === 'lab') {
+            start = i;
+          } else {
+            break;
+          }
         }
-        labCount++;
+        
+        // Apply the selection to all 3 lab periods
+        for (let i = 0; i < 3 && start + i < day.periods.length; i++) {
+          if (day.periods[start + i]?.type === 'lab') {
+            day.periods[start + i].selectedSubject = selectedSubject.subject_name;
+            
+            // Find lecturer for this subject and batch
+            const lecturerAllocation = batchAllocations.find(
+              a => a.subject_name === selectedSubject.subject_name
+            );
+            
+            day.periods[start + i].selectedLecturer = lecturerAllocation?.faculty_name || 'Not Assigned';
+          }
+        }
+      } else {
+        // For regular class periods
+        period.selectedSubject = selectedSubject.subject_name;
+        
+        // Find lecturer for this subject and batch
+        const lecturerAllocation = batchAllocations.find(
+          a => a.subject_name === selectedSubject.subject_name
+        );
+        
+        period.selectedLecturer = lecturerAllocation?.faculty_name || 'Not Assigned';
       }
     }
 
-    timetable[day] = slots;
-  }
+    setTimetable(updatedTimetable);
+  };
 
-  return timetable;
-};
+  const getPeriodStyle = (period: Period) => {
+    const baseClasses = "border-input dark:bg-input/30 dark:hover:bg-input/50 text-center gap-2 rounded-md border bg-transparent px-2 py-2";
+    
+    if (period.isBreak) {
+      return `${baseClasses} cursor-not-allowed`;
+    }
+    
+    return baseClasses;
+  };
 
+  const getPeriodTextColor = (period: Period) => {
+    if (period.isBreak) {
+      return 'text-gray-600';
+    }
+    
+    if (period.selectedSubject) {
+      return 'text-green-300';
+    }
+    
+    switch (period.type) {
+      case 'class':
+        return 'text-green-300';
+      case 'lab':
+        return 'text-yellow-300';
+      case 'empty':
+      default:
+        return 'text-gray-600';
+    }
+  };
 
-export default function AutoGenerateTimetablePage() {
-  const [selectedBatch, setSelectedBatch] = useState('');
-  const [selectedYear, setSelectedYear] = useState('');
-  const [timetable, setTimetable] = useState<Timetable | null>(null);
+  const getPeriodText = (period: Period) => {
+    if (period.isBreak) {
+      return period.startTime === '10:50 AM' ? 'Morning Break' : 'Lunch Break';
+    }
+    
+    if (period.selectedSubject) {
+      return period.selectedSubject;
+    }
+    
+    switch (period.type) {
+      case 'class':
+        return 'Select Sub';
+      case 'lab':
+        return 'Select Lab';
+      case 'empty':
+      default:
+        return 'Free';
+    }
+  };
 
-  const isSelectionValid = selectedBatch && selectedYear;
+  const saveTimetable = async () => {
+    if (!timetable) {
+      toast.error('No timetable to save.');
+      return;
+    }
 
-  const handleAutoGenerate = () => {
-    const generated = generateDummyTimetable();
-    setTimetable(generated);
+    setIsSaving(true);
+    
+    // Simulate API call
+    setTimeout(() => {
+      console.log('Saving timetable:', timetable);
+      setIsSaving(false);
+      toast.success('Timetable saved successfully!');
+    }, 2000);
   };
 
   const sendToHOD = () => {
+    if (!timetable) {
+      toast.error('No timetable to send.');
+      return;
+    }
+
     console.log('Sending to HOD:', {
       batch: selectedBatch,
       year: selectedYear,
+      yearId,
       timetable,
     });
-    alert('Timetable sent to HOD for approval.');
+    
+    toast.success('Timetable sent to HOD for approval.');
   };
 
+  if (!yearId || !selectedBatch?.batch_id) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-4 rounded-lg border border-amber-200">
+              <span>Please select an academic year and batch to create timetable.</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
+    <div className="p-6 max-w-8xl mx-auto space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl">Auto Generate Timetable</CardTitle>
+          <CardTitle className="text-xl flex items-center gap-2">
+            <span>Create Timetable</span>
+            {selectedYear && selectedBatch && (
+              <span className="text-sm font-normal text-muted-foreground">
+                ({selectedYear} - {selectedBatch.section})
+              </span>
+            )}
+          </CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
           <div className="space-y-2">
-            <Label>Select Batch</Label>
-            <Select
-              value={selectedBatch}
-              onValueChange={setSelectedBatch}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select batch" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="MCA-A">MCA-A</SelectItem>
-                <SelectItem value="MCA-B">MCA-B</SelectItem>
-              </SelectContent>
-            </Select>
+                <h3 className="text-lg font-semibold">Manual Timetable Creation</h3>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <div>• Uses the timetable format created in previous step</div>
+                  <div>• Select subjects and lecturers for each period</div>
+                  <div>• Respects lab periods (3 consecutive periods)</div>
+                  <div>• Maintains break periods as defined in format</div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={saveTimetable}
+                  disabled={isSaving || !timetable}
+                  size="sm"
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Save Timetable
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* Subject Selection Info */}
+            <div className="p-4 border rounded-lg">
+              <h4 className="font-semibold mb-2">Available Subjects & Lecturers:</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-sm">
+                {batchAllocations.map((allocation) => (
+                  <div key={allocation.allocation_id} className=" text-muted-foreground">
+                    <span className="font-medium">{allocation.subject_name}</span>
+                    <span className="text-muted-foreground"> - {allocation.faculty_name}</span>
+                  </div>
+                ))}
+              </div>
+              
+           
           </div>
-          <div className="space-y-2">
-            <Label>Select Academic Year</Label>
-            <Select
-              value={selectedYear}
-              onValueChange={setSelectedYear}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select year" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="2024-2025">2024-2025</SelectItem>
-                <SelectItem value="2025-2026">2025-2026</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </CardContent>
       </Card>
-
-      {isSelectionValid && !timetable && (
-        <Button onClick={handleAutoGenerate}>Auto Generate Timetable</Button>
-      )}
 
       {timetable && (
         <Card>
           <CardHeader className="flex justify-between items-center">
             <CardTitle className="text-lg">
-              Generated Timetable: {selectedBatch} - {selectedYear}
+              Timetable: {selectedBatch?.section} - {selectedYear}
             </CardTitle>
-            <Button onClick={sendToHOD}>Send to HOD</Button>
+            <Button onClick={sendToHOD} size="sm">
+              <Send className="w-4 h-4 mr-2" />
+              Send to HOD
+            </Button>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-8 gap-2 text-xs font-semibold border-b pb-2 text-center">
+            <div className="grid grid-cols-9 gap-2 text-xs font-semibold border-b pb-2 text-center">
               {timeSlots.map((slot, idx) => (
-                <div key={idx}>{slot}</div>
+                <div key={idx} className="text-xs">{slot}</div>
               ))}
             </div>
 
-            {Object.entries(timetable).map(([day, slots]) => (
-              <div key={day}>
-                <h3 className="mt-6 mb-2 font-medium text-sm">{day}</h3>
-                <div className="grid grid-cols-8 gap-2">
-                  {slots.map((slot, idx) => {
-                    // Skip if part of a lab that already started earlier
-                    if (
-                      idx > 0 &&
-                      slot.type === 'lab' &&
-                      slots[idx - 0]?.type === 'lab' &&
-                      slots[idx - 1]?.type === 'lab'
-                    ) {
-                      return null;
-                    }
-
-                    // Handle lab block (3-hour)
-                    if (
-                      slot.type === 'lab' &&
-                      idx <= 5 &&
-                      slots[idx + 1]?.type === 'lab' &&
-                      slots[idx + 2]?.type === 'lab'
-                    ) {
+            {timetable.map((day, dayIndex) => (
+              <div key={day.day} className="space-y-3">
+                <h3 className="text-lg font-bold border-b pb-2 mt-6">
+                  {day.day}
+                </h3>
+                <div className="grid grid-cols-25 gap-1">
+                  {day.periods.map((period, periodIndex) => {
+                    // Handle lab periods - show dropdown for any lab period
+                    if (period.type === 'lab') {
                       return (
                         <div
-                          key={idx}
-                          className="col-span-3 border-input dark:bg-input/30 dark:hover:bg-input/50 text-center gap-2 rounded-md border bg-transparent px-2 py-2"
+                          key={periodIndex}
+                          className="col-span-3 border-green-300 text-green-300 rounded-md border bg-transparent px-2 py-2 text-center"
                         >
-                          <p className="text-xs italic text-yellow-300">LAB</p>
-                          {slot.subject && (
-                            <p className="text-sm">{slot.subject}</p>
-                          )}
+                          <div className="text-center py-2">
+                            <p className="text-xs italic text-green-300">LAB</p>
+                            {period.selectedSubject ? (
+                              <p className="text-sm text-green-300">{period.selectedSubject}</p>
+                            ) : (
+                              <div className="mt-2">
+                                <Select
+                                  value={period.selectedSubject || ''}
+                                  onValueChange={(value) => handleSubjectChange(dayIndex, periodIndex, value)}
+                                >
+                                  <SelectTrigger className="h-8 text-xs border-green-300 text-green-300 bg-transparent">
+                                    <SelectValue placeholder="Choose Lab Subject" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {subjects
+                                      .filter(s => isLabSubject(s))
+                                      .map((subject) => (
+                                        <SelectItem key={subject.subject_id} value={subject.subject_id.toString()}>
+                                          {subject.subject_name}
+                                        </SelectItem>
+                                      ))}
+                                    {subjects.filter(s => isLabSubject(s)).length === 0 && (
+                                      <SelectItem value="" disabled>
+                                        No lab subjects available
+                                      </SelectItem>
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            )}
+                            {period.selectedLecturer && (
+                              <p className="text-xs opacity-75 mt-1 text-green-300">{period.selectedLecturer}</p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // Handle break periods
+                    if (period.isBreak) {
+                      return (
+                        <div
+                          key={periodIndex}
+                          className="col-span-2 border-gray-300 text-gray-600 rounded-md border bg-transparent px-2 py-2 text-center cursor-not-allowed"
+                        >
+                          <div className="text-center py-2">
+                            <div className="font-semibold text-xs text-gray-600">
+                              {periodIndex === 2 ? 'Morning Break' : 'Lunch Break'}
+                            </div>
+                            <div className="text-xs opacity-75 mt-1 text-gray-600">
+                              {period.startTime} - {period.endTime}
+                            </div>
+                          </div>
                         </div>
                       );
                     }
 
                     // Handle normal class slot
-                    const textColor =
-                      slot.type === 'lab'
-                        ? 'text-yellow-300'
-                        : slot.type === 'class'
-                          ? 'text-green-300'
-                          : 'text-gray-600';
-
                     return (
                       <div
-                        key={idx}
-                        className="border-input dark:bg-input/30 dark:hover:bg-input/50 text-center gap-2 rounded-md border bg-transparent px-2 py-2"
+                        key={periodIndex}
+                        className={`col-span-3 border rounded-md bg-transparent px-2 py-2 text-center ${
+                          period.type === 'empty' 
+                            ? 'border-gray-300 text-gray-600' 
+                            : 'border-yellow-300 text-yellow-300'
+                        }`}
                       >
-                        <p className={`text-xs italic ${textColor}`}>
-                          {slot.type.toUpperCase()}
-                        </p>
-                        {slot.subject && (
-                          <p className="text-sm">{slot.subject}</p>
-                        )}
+                        <div className="text-center py-2">
+                          <div className={`font-semibold text-xs ${
+                            period.type === 'empty' ? 'text-gray-600' : 'text-yellow-300'
+                          }`}>
+                            {period.type === 'empty' ? 'FREE' : 'CLASS'}
+                          </div>
+                          {period.selectedSubject ? (
+                            <div className={`text-sm font-medium mt-1 ${
+                              period.type === 'empty' ? 'text-gray-600' : 'text-yellow-300'
+                            }`}>
+                              {period.selectedSubject}
+                            </div>
+                          ) : period.type === 'class' ? (
+                            <div className="text-xs opacity-75 mt-1 text-yellow-300">Select Subject</div>
+                          ) : (
+                            <div className="text-sm font-medium mt-1 text-gray-600">Free</div>
+                          )}
+                         
+                          {period.selectedLecturer && (
+                            <div className={`text-xs opacity-75 mt-1 ${
+                              period.type === 'empty' ? 'text-gray-600' : 'text-yellow-300'
+                            }`}>
+                              {period.selectedLecturer}
+                            </div>
+                          )}
+                          
+                          
+                        </div>
                       </div>
                     );
                   })}
-
                 </div>
               </div>
             ))}
