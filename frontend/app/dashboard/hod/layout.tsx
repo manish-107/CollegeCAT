@@ -30,7 +30,7 @@ const hodOptions = [
     available: true
   },
   { 
-    label: "3. Finalize Timetable", 
+    label: "3. Finalized Timetable", 
     path: "/dashboard/hod/3-finalize-timetable", 
     icon: <FileCheck size={16} className="mr-2 text-orange-500" />,
     status: "Finalize and publish the timetable",
@@ -74,14 +74,14 @@ function HODSidebar({
         {/* Year Display */}
         <div className="mb-4 px-2">
           <div className="text-sm font-medium text-muted-foreground">Academic Year</div>
-          <div className="text-lg font-bold">{selectedYear || 'Select Year'}</div>
+          <div className="text-lg font-medium">{selectedYear || 'Select Year'}</div>
         </div>
 
         {/* Selected Batch Display */}
         {selectedBatch && (
           <div className="mb-4 px-2">
             <div className="text-sm font-medium text-muted-foreground">Selected Batch</div>
-            <div className="text-lg font-bold bg-[var(--sidebar-accent)] p-2 rounded border border-[var(--sidebar-border)]">
+            <div className="text-sm font-medium bg-[var(--sidebar-accent)] p-2 rounded border border-[var(--sidebar-border)]">
               {selectedBatch.section} ({selectedBatch.noOfStudent} students)
             </div>
           </div>

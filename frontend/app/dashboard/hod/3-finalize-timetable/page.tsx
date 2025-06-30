@@ -4,6 +4,10 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, AlertCircle, Clock } from "lucide-react";
+import { useYearBatch } from '@/app/dashboard/context/YearBatchContext';
+import { useQuery } from '@tanstack/react-query';
+import { getYearsWithBatchesOptions, getTimetableByYearAndBatchOptions, getSubjectsByYearOptions } from '@/app/client/@tanstack/react-query.gen';
+import type { TimetableModuleResponse, SubjectResponse } from '@/app/client/types.gen';
 
 interface TimetableSummary {
   totalSlots: number;
@@ -39,7 +43,6 @@ const recommendations = [
   "Subject distribution is appropriate",
 ];
 
-// Dummy timetable data for display
 const timeSlots = [
   '9:00 AM - 10:00 AM',
   '10:00 AM - 11:00 AM',
@@ -50,63 +53,49 @@ const timeSlots = [
   '3:00 PM - 4:00 PM',
   '4:00 PM - 5:00 PM',
 ];
-const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-const timetable = {
-  Monday: [
-    { type: 'class', subject: 'Math' },
-    { type: 'class', subject: 'AI' },
-    { type: 'lab', subject: 'OS Lab' },
-    { type: 'lab', subject: 'OS Lab' },
-    { type: 'lab', subject: 'OS Lab' },
-    { type: 'class', subject: 'Cloud' },
-    { type: 'class', subject: 'ML' },
-    { type: 'class', subject: 'Networks' },
-  ],
-  Tuesday: [
-    { type: 'class', subject: 'DSA' },
-    { type: 'class', subject: 'Math' },
-    { type: 'class', subject: 'AI' },
-    { type: 'class', subject: 'Cloud' },
-    { type: 'class', subject: 'ML' },
-    { type: 'class', subject: 'Networks' },
-    { type: 'class', subject: 'Elective' },
-    { type: 'class', subject: 'DSA' },
-  ],
-  Wednesday: [
-    { type: 'class', subject: 'Math' },
-    { type: 'lab', subject: 'DB Lab' },
-    { type: 'lab', subject: 'DB Lab' },
-    { type: 'lab', subject: 'DB Lab' },
-    { type: 'class', subject: 'AI' },
-    { type: 'class', subject: 'Cloud' },
-    { type: 'class', subject: 'ML' },
-    { type: 'class', subject: 'Networks' },
-  ],
-  Thursday: [
-    { type: 'class', subject: 'Elective' },
-    { type: 'class', subject: 'Math' },
-    { type: 'class', subject: 'AI' },
-    { type: 'class', subject: 'Cloud' },
-    { type: 'class', subject: 'ML' },
-    { type: 'class', subject: 'Networks' },
-    { type: 'class', subject: 'Elective' },
-    { type: 'class', subject: 'DSA' },
-  ],
-  Friday: [
-    { type: 'class', subject: 'Math' },
-    { type: 'class', subject: 'AI' },
-    { type: 'class', subject: 'Cloud' },
-    { type: 'class', subject: 'ML' },
-    { type: 'class', subject: 'Networks' },
-    { type: 'class', subject: 'Elective' },
-    { type: 'class', subject: 'DSA' },
-    { type: 'class', subject: 'Math' },
-  ],
-};
 
 export default function HODFinalizeTimetablePage() {
+  const { selectedYear, selectedBatch } = useYearBatch();
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [isFinalized, setIsFinalized] = useState(false);
+
+  // Fetch academic years to get year_id
+  const { data: yearsData } = useQuery(getYearsWithBatchesOptions());
+  const selectedYearData = yearsData?.items?.find(item => item.academic_year === selectedYear);
+  const yearId = selectedYearData?.year_id;
+
+  // Fetch subjects for the selected year
+  const { data: subjectsData, isLoading: subjectsLoading } = useQuery({
+    ...getSubjectsByYearOptions({ path: { year_id: yearId! } }),
+    enabled: !!yearId
+  });
+
+  // Fetch timetable for the selected year and batch
+  const { data: timetableData, isLoading: timetableLoading, error } = useQuery({
+    ...getTimetableByYearAndBatchOptions({
+      path: { year_id: yearId!, batch_id: selectedBatch?.batch_id! }
+    }),
+    enabled: !!yearId && !!selectedBatch?.batch_id
+  });
+
+  const subjects = subjectsData?.subjects || [];
+  const isLoading = subjectsLoading || timetableLoading;
+
+  // Helper to get subject details by name
+  const getSubjectDetails = (subjectName: string) => {
+    return subjects.find(subject => subject.subject_name === subjectName);
+  };
+
+  // Helper to get abbreviation or fallback to subject name
+  const getAbbreviation = (subject: string) => {
+    const subjectDetails = getSubjectDetails(subject);
+    return subjectDetails?.abbreviation || subject;
+  };
+
+  let timetable: TimetableModuleResponse['timetable_data'] | null = null;
+  if (timetableData && timetableData.timetable_data) {
+    timetable = timetableData.timetable_data;
+  }
 
   const handleFinalize = () => {
     setIsFinalizing(true);
@@ -122,111 +111,110 @@ export default function HODFinalizeTimetablePage() {
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-8">
       <div className="text-center">
-        <h2 className="text-3xl font-bold mb-2">Finalize Timetable</h2>
+        <h2 className="text-3xl font-bold mb-2">Finalized Timetable</h2>
         <p className="text-muted-foreground">Review and confirm the final timetable</p>
       </div>
 
       {!isFinalized ? (
         <>
+          {/* Subjects and Faculty Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Subjects and Faculty Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="text-center py-8">Loading subjects...</div>
+              ) : subjects.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">No subjects found for this year.</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {subjects.map((subject) => (
+                    <div key={subject.subject_id} className="border rounded-lg p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold text-sm">{subject.subject_name}</h3>
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          subject.subject_type === 'CORE' ? 'bg-blue-100 text-blue-800' :
+                          subject.subject_type === 'ELECTIVE' ? 'bg-green-100 text-green-800' :
+                          'bg-purple-100 text-purple-800'
+                        }`}>
+                          {subject.subject_type}
+                        </span>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        <div>Code: {subject.subject_code}</div>
+                        <div>Abbreviation: {subject.abbreviation}</div>
+                        <div>Hours: {subject.no_of_hours_required}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           
 
-        
-
-          {/* Recommendations */}
-          <Card>
-            <CardHeader>
-              <CardTitle>System Recommendations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {recommendations.map((recommendation, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>{recommendation}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Final Timetable */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Final Timetable</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-8 gap-2 text-xs font-semibold border-b pb-2 text-center">
-                {timeSlots.map((slot, idx) => (
-                  <div key={idx}>{slot}</div>
-                ))}
-              </div>
-              {days.map((day) => (
-                <div key={day}>
-                  <h3 className="mt-6 mb-2 font-medium text-sm">{day}</h3>
-                  <div className="grid grid-cols-8 gap-2">
-                    {(() => {
-                      const slots = timetable[day as keyof typeof timetable];
-                      const cells = [];
-                      for (let idx = 0; idx < slots.length; ) {
-                        const slot = slots[idx];
-                        // Lab block logic
-                        const isLabStart =
-                          slot.type === 'lab' &&
-                          idx <= slots.length - 3 &&
-                          slots[idx + 1]?.type === 'lab' &&
-                          slots[idx + 2]?.type === 'lab';
-                        if (isLabStart) {
-                          cells.push(
-                            <div
-                              key={idx}
-                              className="col-span-3 border-input dark:bg-input/30 dark:hover:bg-input/50 text-center gap-2 rounded-md border bg-yellow px-2 py-2"
-                            >
-                              <p className="text-xs italic text-yellow-700">LAB</p>
-                              {slot.subject && <p className="text-sm">{slot.subject}</p>}
-                            </div>
-                          );
-                          idx += 3;
-                        } else {
-                          const textColor =
-                            slot.type === 'lab'
-                              ? 'text-yellow-700'
-                              : slot.type === 'class'
-                                ? 'text-green-700'
-                                : 'text-gray-600';
-                          cells.push(
-                            <div
-                              key={idx}
-                              className="border-input dark:bg-input/30 dark:hover:bg-input/50 text-center gap-2 rounded-md border bg-transparent px-2 py-2"
-                            >
-                              <p className={`text-xs italic ${textColor}`}>{slot.type.toUpperCase()}</p>
-                              {slot.subject && <p className="text-sm">{slot.subject}</p>}
-                            </div>
-                          );
-                          idx++;
-                        }
-                      }
-                      return cells;
-                    })()}
-                  </div>
+          {isLoading && (
+            <Card><CardContent className="py-8 text-center">Loading timetable...</CardContent></Card>
+          )}
+          {error && (
+            <Card><CardContent className="py-8 text-center text-red-500">Failed to load timetable.</CardContent></Card>
+          )}
+          {timetable && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">
+                  Timetable: {selectedBatch?.section} - {selectedYear}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-8 gap-2 text-xs font-semibold border-b pb-2 text-center">
+                  {timeSlots.map((slot, idx) => (
+                    <div key={idx}>{slot}</div>
+                  ))}
                 </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* Finalize Button */}
-          <div className="text-center">
-            <Button
-              size="lg"
-              onClick={handleFinalize}
-              disabled={isFinalizing}
-              className="px-8"
-            >
-              {isFinalizing ? "Finalizing..." : "Finalize Timetable"}
-            </Button>
-            <p className="text-sm text-muted-foreground mt-2">
-              This action will make the timetable final and visible to all faculty members.
-            </p>
-          </div>
+                {Object.entries(timetable).map(([day, slots]) => (
+                  <div key={day}>
+                    <h3 className="mt-6 mb-2 font-medium text-sm">{day}</h3>
+                    <div className="grid grid-cols-8 gap-2">
+                      {slots.map((subject, idx) => {
+                        const subjectDetails = getSubjectDetails(subject);
+                        return (
+                          <div
+                            key={idx}
+                            className="border-input dark:bg-input/30 dark:hover:bg-input/50 text-center gap-2 rounded-md border bg-transparent px-2 py-2"
+                          >
+                            <p className="text-xs italic text-green-300">{getAbbreviation(subject)}</p>
+                            {subjectDetails && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                <div>{subjectDetails.subject_code}</div>
+                                <div>{subjectDetails.subject_type}</div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+                {/* Download Button */}
+                <div className="text-center mt-8">
+                  <Button
+                    size="lg"
+                    className="px-8"
+                    onClick={() => {
+                      // Download logic (PDF or image)
+                      window.print(); // Simple print for now
+                    }}
+                  >
+                    Download Timetable
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </>
       ) : (
         <Card className="text-center">

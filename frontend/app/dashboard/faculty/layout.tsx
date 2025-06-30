@@ -6,16 +6,12 @@ import { Calendar, Book, Star, ChevronRight, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Header from "../components/Header";
 import { useYearBatch } from "@/app/dashboard/context/YearBatchContext";
+import type { BatchResponse } from '@/app/client/types.gen';
 
-interface Batch {
-  section: string;
-  noOfStudent: number;
-  batch_id: number;
-  created_at: string;
-}
+type Batch = BatchResponse;
 
 const facultyOptions = [
-  { label: "Subject Priority Selection", path: "/dashboard/faculty/1-priority-selection", icon: <Star size={16} className="mr-2 text-yellow-500" /> },
+  // { label: "Subject Priority Selection", path: "/dashboard/faculty/1-priority-selection", icon: <Star size={16} className="mr-2 text-yellow-500" /> },
   { label: "View Subjects", path: "/dashboard/faculty/2-view-subjects", icon: <Book size={16} className="mr-2 text-blue-500" /> },
   { label: "View Timetable", path: "/dashboard/faculty/3-view-timetable", icon: <Calendar size={16} className="mr-2 text-green-500" /> },
 ];
@@ -30,7 +26,8 @@ function FacultySidebar({
   const [expandedBatches, setExpandedBatches] = useState<{ [key: string]: boolean }>({});
   const { selectedYear, selectedBatch, batches, setSelectedBatch } = useYearBatch();
 
-  const toggleBatch = (batchSection: string) => {
+  const toggleBatch = (batchSection: string | null | undefined) => {
+    if (!batchSection) return;
     setExpandedBatches(prev => ({
       ...prev,
       [batchSection]: !prev[batchSection]
@@ -38,10 +35,8 @@ function FacultySidebar({
   };
 
   const handleBatchClick = (batch: Batch) => {
-    // Automatically select the batch when clicked
     setSelectedBatch(batch);
-    // Also toggle the expansion
-    toggleBatch(batch.section);
+    toggleBatch(batch.section ?? '');
   };
 
   return (
@@ -53,11 +48,21 @@ function FacultySidebar({
           </div>
         </div>
         
+        {/* Priority Selection - always visible */}
+       
+
         {/* Year Display */}
         <div className="mb-4 px-2">
           <div className="text-sm font-medium text-muted-foreground">Academic Year</div>
-          <div className="text-lg font-bold">{selectedYear || 'Select Year'}</div>
+          <div className="text-sm font-medium">{selectedYear || 'Select Year'}</div>
         </div>
+
+        <Link href="/dashboard/faculty/1-priority-selection" passHref>
+          <div className="flex mb-2 items-center px-3 py-2 text-sm rounded-md hover:bg-[var(--sidebar-accent)] group bg-[var(--sidebar-accent)]/50 border border-[var(--sidebar-border)] ">
+            <Star size={16} className="mr-2 text-orange-500" />
+            <span className="flex-1">Priority Selection</span>
+          </div>
+        </Link>
 
         {/* Selected Batch Display */}
         {selectedBatch && (
@@ -82,7 +87,7 @@ function FacultySidebar({
               >
                 <ChevronRight
                   size={16}
-                  className={`mr-1 transition-transform text-muted-foreground ${expandedBatches[batch.section] ? "rotate-90" : ""}`}
+                  className={`mr-1 transition-transform text-muted-foreground ${expandedBatches[batch.section ?? ''] ? "rotate-90" : ""}`}
                 />
                 <Users size={16} className="mr-2 text-blue-400" />
                 <span className="flex-1 text-left">{batch.section}</span>
@@ -90,7 +95,7 @@ function FacultySidebar({
               </button>
 
               {/* Options under each batch */}
-              {expandedBatches[batch.section] && (
+              {expandedBatches[batch.section ?? ''] && (
                 <div className="ml-6 mt-2 space-y-2">
                   {facultyOptions.map((opt, idx) => (
                     <Link href={opt.path} key={opt.path} passHref>

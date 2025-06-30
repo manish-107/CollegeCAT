@@ -166,17 +166,17 @@ const TimetableFormatPage = () => {
     const baseClasses = "border rounded-md text-xs cursor-pointer transition-all font-medium";
     
     if (period.isBreak) {
-      return `${baseClasses} bg-yellow-100 text-yellow-800 border-yellow-300 cursor-not-allowed`;
+      return `${baseClasses} text-yellow-500  text-xs border-yellow-500 bg-input/30 hover:bg-input/50 cursor-not-allowed`;
     }
     
     switch (period.type) {
       case 'class':
-        return `${baseClasses} bg-blue-500 text-white border-blue-600 hover:bg-blue-600`;
+        return `${baseClasses}  text-blue-600 border-blue-600 bg-input/30 hover:bg-input/50`;
       case 'lab':
-        return `${baseClasses} bg-green-500 text-white border-green-600 hover:bg-green-600`;
+        return `${baseClasses} text-green-600 border-green-600 bg-input/30 hover:bg-input/50`;
       case 'empty':
       default:
-        return `${baseClasses} bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100`;
+        return `${baseClasses}  bg-input/30 hover:bg-input/50 text-gray-200 border-gray-200`;
     }
   };
 
@@ -371,9 +371,9 @@ const TimetableFormatPage = () => {
         ))}
       </div>
 
-              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <h4 className="font-semibold text-blue-900 mb-2">Instructions:</h4>
-                <ul className="text-sm text-blue-800 space-y-1">
+              <div className="mt-6 p-4  border border-blue-200 rounded-lg">
+                <h4 className="font-semibold  mb-2">Instructions:</h4>
+                <ul className="text-sm  space-y-1">
                   <li>• Click on empty periods to cycle: Empty → Class → Lab → Empty</li>
                   <li>• Lab periods automatically create 3 consecutive periods</li>
                   <li>• Only one lab slot (3 periods) can be selected per day</li>
