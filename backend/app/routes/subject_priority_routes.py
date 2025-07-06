@@ -113,6 +113,11 @@ async def update_allocations_by_year_and_batch(
     service: FacultyPriorityService = Depends(get_service)
 ):
     """Update allocation by year_id and batch_id"""
-    await service.update_allocation_faculty(allocation_data.allocation_id, allocation_data.faculty_id)
+    await service.update_allocation_faculty(
+        allocation_data.allocation_id,
+        allocation_data.faculty_id,
+        co_faculty_id=allocation_data.co_faculty_id,
+        venue=allocation_data.venue
+    )
     return SuccessResponse(message="Allocation updated successfully",data=allocation_data.allocation_id)
 

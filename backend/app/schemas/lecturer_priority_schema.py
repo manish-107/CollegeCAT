@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Any, List
+from typing import Any, List, Optional
 from datetime import datetime
 
 class SubjectPriorityEntry(BaseModel):
@@ -111,13 +111,15 @@ class FacultySubjectAllocationResponse(BaseModel):
     academic_year: str = Field(..., description="Academic year in format YYYY-YYYY",examples=["2023-2024"])
     allocated_priority: int = Field(..., description="Priority level that was allocated (1-5)",examples=[1])
     created_at: datetime = Field(..., description="Timestamp when the allocation was created",examples=[datetime.now()])
+    co_faculty_id: Optional[int] = Field(None, description="ID of the co-faculty for this allocation, if any",examples=[1])
+    venue: Optional[str] = Field(None, description="Venue for the allocation, if any",examples=["Room 101"])
 
 class FacultySubjectAllocationListResponse(BaseModel):
     allocations: List[FacultySubjectAllocationResponse] = Field(..., description="List of subject allocations")
 
 class AllocationResultResponse(BaseModel):
     total_allocations: int = Field(..., description="Total number of allocations made",examples=[1])
-    allocations: List[FacultySubjectAllocationResponse] = Field(..., description="List of all allocations made",examples=[FacultySubjectAllocationResponse(allocation_id=1,faculty_id=1,faculty_name="John Doe",faculty_email="john.doe@example.com",subject_id=1,subject_name="Data Structures and Algorithms",subject_code="DSA",subject_type="CORE",abbreviation="DSA",batch_id=1,batch_section="A",batch_noOfStudent=60,year_id=1,academic_year="2023-2024",allocated_priority=1,created_at=datetime.now())])
+    allocations: List[FacultySubjectAllocationResponse] = Field(..., description="List of all allocations made",examples=[FacultySubjectAllocationResponse(allocation_id=1,faculty_id=1,faculty_name="John Doe",faculty_email="john.doe@example.com",subject_id=1,subject_name="Data Structures and Algorithms",subject_code="DSA",subject_type="CORE",abbreviation="DSA",batch_id=1,batch_section="A",batch_noOfStudent=60,year_id=1,academic_year="2023-2024",allocated_priority=1,created_at=datetime.now(),co_faculty_id=1,venue="Room 101")])
 
 # New schemas for the allocation response format
 class AllocatedFacultyResponse(BaseModel):
@@ -134,20 +136,105 @@ class AllocatedSubjectResponse(BaseModel):
     subject_type: str = Field(..., description="Type of allocated subject (CORE, ELECTIVE, LAB)",examples=["CORE"])
     abbreviation: str = Field(..., description="Short abbreviation for the subject (e.g., 'DSA', 'CN', 'CA')",examples=["DSA"])
     allocated_faculty: AllocatedFacultyResponse = Field(..., description="Details of the faculty allocated to this subject",examples=[AllocatedFacultyResponse(faculty_id=1,uname="John Doe",role="FACULTY",email="john.doe@example.com",joining_year=2023)])
+    co_faculty: Optional[AllocatedFacultyResponse] = Field(None, description="Details of the co-faculty for this allocation, if any",examples=[AllocatedFacultyResponse(faculty_id=2,uname="Jane Smith",role="FACULTY",email="jane.smith@example.com",joining_year=2020)])
+    venue: Optional[str] = Field(None, description="Venue for the allocation, if any",examples=["Room 101"])
 
 class AllocatedBatchResponse(BaseModel):
     batch_id: int = Field(..., description="ID of the batch",examples=[1])
     section: str = Field(..., description="Section name of the batch",examples=["A"])
     noOfStudent: int = Field(..., description="Number of students in the batch",examples=[60])
-    subjects: dict[str, AllocatedSubjectResponse] = Field(..., description="Dictionary of subjects allocated to this batch, keyed by subject ID",examples=[{"1": AllocatedSubjectResponse(subject_id=1,subject_name="Data Structures and Algorithms",subject_code="DSA",subject_type="CORE",abbreviation="DSA",allocated_faculty=AllocatedFacultyResponse(faculty_id=1,uname="John Doe",role="FACULTY",email="john.doe@example.com",joining_year=2023))}] )
+    subjects: dict[str, AllocatedSubjectResponse] = Field(
+        ..., 
+        description="Dictionary of subjects allocated to this batch, keyed by subject ID",
+        examples=[{
+            "1": {
+                "subject_id": 1,
+                "subject_name": "Data Structures and Algorithms",
+                "subject_code": "DSA",
+                "subject_type": "CORE",
+                "abbreviation": "DSA",
+                "allocated_faculty": {
+                    "faculty_id": 1,
+                    "uname": "John Doe",
+                    "role": "FACULTY",
+                    "email": "john.doe@example.com",
+                    "joining_year": 2023
+                },
+                "co_faculty_id": 1,
+                "venue": "Room 101"
+            }
+        }]
+    )
 
 class AllocationYearResponse(BaseModel):
     year_id: int = Field(..., description="Academic year ID",examples=[1])
     year: str = Field(..., description="Academic year in format YYYY-YYYY",examples=["2023-2024"])
-    batchs: dict[str, AllocatedBatchResponse] = Field(..., description="Dictionary of batches for this year, keyed by batch ID",examples=[{"1": AllocatedBatchResponse(batch_id=1,section="A",noOfStudent=60,subjects={"1": AllocatedSubjectResponse(subject_id=1,subject_name="Data Structures and Algorithms",subject_code="DSA",subject_type="CORE",abbreviation="DSA",allocated_faculty=AllocatedFacultyResponse(faculty_id=1,uname="John Doe",role="FACULTY",email="john.doe@example.com",joining_year=2023))})}] )
+    batchs: dict[str, AllocatedBatchResponse] = Field(
+        ..., 
+        description="Dictionary of batches for this year, keyed by batch ID",
+        examples=[{
+            "1": {
+                "batch_id": 1,
+                "section": "A",
+                "noOfStudent": 60,
+                "subjects": {
+                    "1": {
+                        "subject_id": 1,
+                        "subject_name": "Data Structures and Algorithms",
+                        "subject_code": "DSA",
+                        "subject_type": "CORE",
+                        "abbreviation": "DSA",
+                        "allocated_faculty": {
+                            "faculty_id": 1,
+                            "uname": "John Doe",
+                            "role": "FACULTY",
+                            "email": "john.doe@example.com",
+                            "joining_year": 2023
+                        },
+                        "co_faculty_id": 1,
+                        "venue": "Room 101"
+                    }
+                }
+            }
+        }]
+    )
 
 class AllocationResponse(BaseModel):
-    allocations: List[AllocationYearResponse] = Field(..., description="List of academic years with their allocations",examples=[AllocationYearResponse(year_id=1,year="2023-2024",batchs={"1": AllocatedBatchResponse(batch_id=1,section="A",noOfStudent=60,subjects={"1": AllocatedSubjectResponse(subject_id=1,subject_name="Data Structures and Algorithms",subject_code="DSA",subject_type="CORE",abbreviation="DSA",allocated_faculty=AllocatedFacultyResponse(faculty_id=1,uname="John Doe",role="FACULTY",email="john.doe@example.com",joining_year=2023))})})])
+    allocations: List[AllocationYearResponse] = Field(
+        ..., 
+        description="List of academic years with their allocations",
+        examples=[
+            {
+                "year_id": 1,
+                "year": "2023-2024",
+                "batchs": {
+                    "1": {
+                        "batch_id": 1,
+                        "section": "A",
+                        "noOfStudent": 60,
+                        "subjects": {
+                            "1": {
+                                "subject_id": 1,
+                                "subject_name": "Data Structures and Algorithms",
+                                "subject_code": "DSA",
+                                "subject_type": "CORE",
+                                "abbreviation": "DSA",
+                                "allocated_faculty": {
+                                    "faculty_id": 1,
+                                    "uname": "John Doe",
+                                    "role": "FACULTY",
+                                    "email": "john.doe@example.com",
+                                    "joining_year": 2023
+                                },
+                                "co_faculty_id": 1,
+                                "venue": "Room 101"
+                            }
+                        }
+                    }
+                }
+            }
+        ]
+    )
 
 # New schemas for faculty priorities with nested structure
 class FacultyPrioritySubjectResponse(BaseModel):
@@ -179,4 +266,6 @@ class FacultyPriorityDetailListResponse(BaseModel):
 
 class AllocationUpdateRequest(BaseModel):
     allocation_id: int = Field(..., description="ID of the allocation to update")
-    faculty_id: int = Field(..., description="ID of the new faculty to assign to this allocation") 
+    faculty_id: int = Field(..., description="ID of the new faculty to assign to this allocation")
+    co_faculty_id: Optional[int] = Field(None, description="ID of the co-faculty to assign to this allocation")
+    venue: Optional[str] = Field(None, description="Venue for the allocation") 

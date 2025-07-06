@@ -30,7 +30,7 @@ class TimetableModuleService:
             return datetime.fromisoformat(dt.isoformat().replace('Z', '+00:00'))
         return dt
 
-    async def create_timetable_module(self, timetable_data: TimetableModuleCreate) -> TimetableModuleResponse:
+    async def create_timetable_module(self, timetable_data: TimetableModuleCreate) -> int:
         """Create a new timetable module"""
         try:
             # Create the timetable module
@@ -72,7 +72,7 @@ class TimetableModuleService:
             )
 
             logger.info(f"Successfully created timetable module with ID: {timetable.timetable_id}")
-            return response
+            return response.format_id
 
         except Exception as e:
             logger.error(f"Error in create_timetable_module service: {str(e)}")

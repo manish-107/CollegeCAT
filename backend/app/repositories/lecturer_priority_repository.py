@@ -374,7 +374,9 @@ class FacultyPriorityRepository:
                 'year_id': row[0].year_id,
                 'academic_year': row[9],
                 'allocated_priority': row[0].allocated_priority,
-                'created_at': row[0].created_at
+                'created_at': row[0].created_at,
+                'co_faculty_id': getattr(row[0], 'co_faculty_id', None),
+                'venue': getattr(row[0], 'venue', None)
             }
             for row in rows
         ]
@@ -465,7 +467,24 @@ class FacultyPriorityRepository:
             batch_section = row[9]
             batch_noOfStudent = row[10]
             academic_year = row[11]
-            
+
+            # Fetch co-faculty details if co_faculty_id is present
+            co_faculty_obj = None
+            co_faculty_id = getattr(allocation, 'co_faculty_id', None)
+            if co_faculty_id:
+                co_faculty_result = await self.db.execute(
+                    select(Users).where(Users.user_id == co_faculty_id)
+                )
+                co_faculty = co_faculty_result.scalar_one_or_none()
+                if co_faculty:
+                    co_faculty_obj = {
+                        'faculty_id': co_faculty.user_id,
+                        'uname': co_faculty.uname,
+                        'role': co_faculty.role.value if hasattr(co_faculty.role, 'value') else co_faculty.role,
+                        'email': co_faculty.email,
+                        'joining_year': co_faculty.joining_year
+                    }
+
             # Create year entry if not exists
             if year_id not in allocations_data:
                 allocations_data[year_id] = {
@@ -473,7 +492,7 @@ class FacultyPriorityRepository:
                     'year': academic_year,
                     'batchs': {}
                 }
-            
+
             # Create batch entry if not exists
             if allocation.batch_id not in allocations_data[year_id]['batchs']:
                 allocations_data[year_id]['batchs'][allocation.batch_id] = {
@@ -482,7 +501,7 @@ class FacultyPriorityRepository:
                     'noOfStudent': batch_noOfStudent,
                     'subjects': {}
                 }
-            
+
             # Create subject entry if not exists
             if allocation.subject_id not in allocations_data[year_id]['batchs'][allocation.batch_id]['subjects']:
                 allocations_data[year_id]['batchs'][allocation.batch_id]['subjects'][allocation.subject_id] = {
@@ -497,7 +516,9 @@ class FacultyPriorityRepository:
                         'role': faculty_role.value,
                         'email': faculty_email,
                         'joining_year': faculty_joining_year
-                    }
+                    },
+                    'co_faculty': co_faculty_obj,
+                    'venue': getattr(allocation, 'venue', None)
                 }
         
         # Convert to list format but keep batchs and subjects as dictionaries
@@ -535,14 +556,18 @@ class FacultyPriorityRepository:
         )
         return result.scalar_one_or_none()
 
-    async def update_allocation_faculty(self, allocation_id: int, faculty_id: int) -> Optional[FacultySubjectAllocation]:
-        """Update the faculty for a specific allocation"""
+    async def update_allocation_faculty(self, allocation_id: int, faculty_id: int, co_faculty_id: Optional[int] = None, venue: Optional[str] = None) -> Optional[FacultySubjectAllocation]:
+        """Update the faculty, co_faculty_id, and venue for a specific allocation if provided"""
+        update_values = {"faculty_id": faculty_id}
+        if co_faculty_id is not None:
+            update_values["co_faculty_id"] = co_faculty_id
+        if venue is not None:
+            update_values["venue"] = str(venue) # type: ignore
         await self.db.execute(
             update(FacultySubjectAllocation)
             .where(FacultySubjectAllocation.allocation_id == allocation_id)
-            .values(faculty_id=faculty_id)
+            .values(**update_values)
         )
         await self.db.commit()
-        
         # Return the updated allocation
         return await self.get_allocation_by_id(allocation_id) 

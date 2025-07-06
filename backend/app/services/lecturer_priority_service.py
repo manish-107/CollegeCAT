@@ -236,10 +236,12 @@ class FacultyPriorityService:
         allocations = await self.repository.get_allocations_grouped_by_year_batch_subject(year_id)
         return {'allocations': allocations}
 
-    async def update_allocation_faculty(self, allocation_id: int, faculty_id: int):
-        """Update the faculty for a specific allocation"""
+    async def update_allocation_faculty(self, allocation_id: int, faculty_id: int, co_faculty_id: Optional[int] = None, venue: Optional[str] = None):
+        """Update the faculty for a specific allocation, and optionally co_faculty_id and venue"""
         try:
-            updated_allocation = await self.repository.update_allocation_faculty(allocation_id, faculty_id)
+            updated_allocation = await self.repository.update_allocation_faculty(
+                allocation_id, faculty_id, co_faculty_id=co_faculty_id, venue=venue
+            )
             if updated_allocation:
                 return {
                     "message": "Allocation updated successfully",

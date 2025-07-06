@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from fastapi import APIRouter, Depends, Path, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 from app.db.postgres_client import get_db
@@ -10,7 +10,7 @@ from app.schemas.timetable_schema import (
     TimetableFormatResponse,
 )
 
-router = APIRouter(prefix="/timetable")
+router = APIRouter(prefix="/timetable-formats")
 
 @router.post("/formats", response_model=SuccessResponse, status_code=status.HTTP_201_CREATED, operation_id="create_timetable_format")
 async def create_timetable_format(

@@ -375,6 +375,8 @@ class FacultySubjectAllocation(BaseClass):
     faculty_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.user_id", ondelete="RESTRICT"), nullable=False
     )
+    co_faculty_id:Mapped[int] = mapped_column(Integer, ForeignKey("users.user_id"), nullable=True)
+    venue:Mapped[str] = mapped_column(String,nullable=True)
     subject_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("subjects.subject_id", ondelete="RESTRICT"), nullable=False
     )
