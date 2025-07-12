@@ -12,7 +12,7 @@ class YearBatchService:
 
     async def create_year_with_batch(self, data: AcademicYearBatchCreate):
         year_id = await self.repository.create_year_with_batch(data.year, data.batch.dict())
-        return {"created_id": year_id, "message": "successful"}
+        return year_id
 
     async def get_years_with_batches(self):
         items = await self.repository.get_years_with_batches()

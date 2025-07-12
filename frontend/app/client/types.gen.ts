@@ -6,9 +6,9 @@
 export type AcademicYearBatchCreate = {
     /**
      * Year
-     * Academic year ID
+     * Academic year
      */
-    year: number;
+    year: string;
     /**
      * Batch information to create
      */
@@ -177,6 +177,15 @@ export type AllocatedSubjectResponse = {
      * Details of the faculty allocated to this subject
      */
     allocated_faculty: AllocatedFacultyResponse;
+    /**
+     * Details of the co-faculty for this allocation, if any
+     */
+    co_faculty?: AllocatedFacultyResponse | null;
+    /**
+     * Venue
+     * Venue for the allocation, if any
+     */
+    venue?: string | null;
 };
 
 /**
@@ -220,6 +229,16 @@ export type AllocationUpdateRequest = {
      * ID of the new faculty to assign to this allocation
      */
     faculty_id: number;
+    /**
+     * Co Faculty Id
+     * ID of the co-faculty to assign to this allocation
+     */
+    co_faculty_id?: number | null;
+    /**
+     * Venue
+     * Venue for the allocation
+     */
+    venue?: string | null;
 };
 
 /**
@@ -704,6 +723,16 @@ export type FacultySubjectAllocationResponse = {
      * Timestamp when the allocation was created
      */
     created_at: string;
+    /**
+     * Co Faculty Id
+     * ID of the co-faculty for this allocation, if any
+     */
+    co_faculty_id?: number | null;
+    /**
+     * Venue
+     * Venue for the allocation, if any
+     */
+    venue?: string | null;
 };
 
 /**
@@ -2300,7 +2329,7 @@ export type GetAllTimetableFormatsData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/api/timetable/formats';
+    url: '/api/timetable-formats/formats';
 };
 
 export type GetAllTimetableFormatsResponses = {
@@ -2317,7 +2346,7 @@ export type CreateTimetableFormatData = {
     body: TimetableFormatCreate;
     path?: never;
     query?: never;
-    url: '/api/timetable/formats';
+    url: '/api/timetable-formats/formats';
 };
 
 export type CreateTimetableFormatErrors = {
@@ -2348,7 +2377,7 @@ export type GetTimetableFormatsByYearData = {
         year_id: number;
     };
     query?: never;
-    url: '/api/timetable/formats/year/{year_id}';
+    url: '/api/timetable-formats/formats/year/{year_id}';
 };
 
 export type GetTimetableFormatsByYearErrors = {
@@ -2385,7 +2414,7 @@ export type GetTimetableFormatsByYearAndBatchData = {
         batch_id: number;
     };
     query?: never;
-    url: '/api/timetable/formats/year/{year_id}/batch/{batch_id}';
+    url: '/api/timetable-formats/formats/year/{year_id}/batch/{batch_id}';
 };
 
 export type GetTimetableFormatsByYearAndBatchErrors = {
@@ -2417,7 +2446,7 @@ export type DeleteTimetableFormatData = {
         format_id: number;
     };
     query?: never;
-    url: '/api/timetable/formats/{format_id}';
+    url: '/api/timetable-formats/formats/{format_id}';
 };
 
 export type DeleteTimetableFormatErrors = {
@@ -2448,7 +2477,7 @@ export type GetTimetableFormatByIdData = {
         format_id: number;
     };
     query?: never;
-    url: '/api/timetable/formats/{format_id}';
+    url: '/api/timetable-formats/formats/{format_id}';
 };
 
 export type GetTimetableFormatByIdErrors = {
@@ -2479,7 +2508,7 @@ export type UpdateTimetableFormatData = {
         format_id: number;
     };
     query?: never;
-    url: '/api/timetable/formats/{format_id}';
+    url: '/api/timetable-formats/formats/{format_id}';
 };
 
 export type UpdateTimetableFormatErrors = {

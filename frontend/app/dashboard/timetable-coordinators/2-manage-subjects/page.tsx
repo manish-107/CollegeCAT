@@ -220,21 +220,7 @@ export default function ManageSubjectsPage() {
   return (
     <div className="p-6 space-y-6">
       {/* Year and Batch Information */}
-      <Card className="bg-blue-50 border-blue-200">
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-blue-900">Current Context</h3>
-              <div className="text-sm text-blue-700 mt-1">
-                <span className="font-medium">Academic Year:</span> {selectedYear || 'Not selected'}
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-sm text-blue-600">Subjects loaded via TanStack Query</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      
 
       {fetchError && (
         <Card className="border-red-200 bg-red-50">
@@ -351,7 +337,7 @@ export default function ManageSubjectsPage() {
 
       {/* Edit Subject Modal */}
       {editingSubject && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+       <div className="fixed inset-0 z-50 backdrop-blur-md bg-black/30 flex items-center justify-center">
           <Card className="w-full max-w-md mx-4">
             <CardHeader>
               <div className="flex items-center justify-between">

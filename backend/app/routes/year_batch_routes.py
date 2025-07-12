@@ -23,7 +23,7 @@ async def create_year_with_batch(
     service: YearBatchService = Depends(get_service)
 ):
     result = await service.create_year_with_batch(data)
-    return SuccessResponse(message="Academic year and batch created successfully",data=result["year_id"])
+    return SuccessResponse(message="Academic year and batch created successfully",data=result)
 
 @router.get("/academic-years-with-batchs", response_model=AcademicYearWithBatchesListResponse, operation_id="get_years_with_batches")
 async def get_years_with_batches(

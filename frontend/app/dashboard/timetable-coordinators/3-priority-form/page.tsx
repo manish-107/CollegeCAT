@@ -8,27 +8,25 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, Send, Loader2 } from 'lucide-react';
 import { useYearBatch } from '@/app/dashboard/context/YearBatchContext';
 import { useQuery } from '@tanstack/react-query';
-import { 
+import {
   getSubjectsByYearOptions,
   getYearsWithBatchesOptions
 } from '@/app/client/@tanstack/react-query.gen';
 import type { SubjectResponse, SubjectTypeEnum } from '@/app/client/types.gen';
+import { toast } from 'sonner';
 
 export default function CreatePriorityFormPage() {
   const { selectedYear } = useYearBatch();
   const [deadline, setDeadline] = useState('');
-  const [formSent, setFormSent] = useState(false);
 
-  // Fetch academic years to get year_id
   const { data: yearsData } = useQuery(getYearsWithBatchesOptions());
   const selectedYearData = yearsData?.items?.find(item => item.academic_year === selectedYear);
   const yearId = selectedYearData?.year_id;
 
-  // Fetch subjects for the selected year
-  const { 
-    data: subjectsData, 
-    isLoading: loading, 
-    error: fetchError 
+  const {
+    data: subjectsData,
+    isLoading: loading,
+    error: fetchError
   } = useQuery({
     ...getSubjectsByYearOptions({ path: { year_id: yearId! } }),
     enabled: !!yearId
@@ -54,182 +52,150 @@ export default function CreatePriorityFormPage() {
     }
   };
 
-  const handleSubmitForm = () => {
-    if (deadline) {
-      console.log('Priority form submitted with deadline:', deadline);
-      console.log('Subjects included:', subjects);
-      setFormSent(true);
+  const handleSubmitForm = async () => {
+    if (!deadline) return;
+
+    const message = `Please fill priority form. Deadline: ${new Date(deadline).toLocaleString()}`;
+    const notification = {
+      notification: message,
+      date: new Date().toISOString(),
+      role: "FACULTY"
+    };
+
+    try {
+      const res = await fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(notification)
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to send notification');
+      }
+
+      toast.success('Notification sent to faculty successfully!');
+    } catch (error: any) {
+      console.error('Error sending notification:', error.message);
+      toast.error('Failed to send notification');
     }
   };
 
-  const handleResetForm = () => {
-    setFormSent(false);
-    setDeadline('');
-  };
-
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Create Subject Priority Form</h2>
-        <div className="text-sm text-muted-foreground">
+    <div className="space-y-8 mx-auto px-6 py-8 max-w-6xl">
+      <div className="flex justify-between items-center">
+        <h2 className="font-bold text-3xl tracking-tight">Create Subject Priority Form</h2>
+        <div className="text-muted-foreground text-sm">
           {loading ? (
             <div className="flex items-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin" />
-              Loading subjects...
+              <span>Loading subjects...</span>
             </div>
           ) : (
-            `Total Subjects: ${subjects.length}`
+            <span>Total Subjects: {subjects.length}</span>
           )}
         </div>
       </div>
 
-      {/* Year and Batch Context */}
-      <Card className="bg-blue-50 border-blue-200">
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-blue-900">Current Context</h3>
-              <div className="text-sm text-blue-700 mt-1">
-                <span className="font-medium">Academic Year:</span> {selectedYear || 'Not selected'}
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-sm text-blue-600">Subjects loaded from API</div>
-            </div>
-          </div>
+      {fetchError && (
+        <Card className="bg-red-50 border-red-200">
+          <CardContent className="pt-6">
+            <p className="font-medium text-red-700">
+              ⚠️ Failed to fetch subjects. Please try again.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Deadline Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Calendar className="w-5 h-5" />
+            Set Priority Form Deadline
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Label htmlFor="deadline">Submission Deadline</Label>
+          <Input
+            id="deadline"
+            type="datetime-local"
+            value={deadline}
+            onChange={(e) => setDeadline(e.target.value)}
+            className="max-w-sm"
+          />
+          <p className="text-muted-foreground text-sm">
+            Select the deadline by which lecturers must submit their subject preferences.
+          </p>
         </CardContent>
       </Card>
 
-      {fetchError && (
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="pt-6">
-            <div className="text-red-700">
-              <strong>Error:</strong> Failed to fetch subjects. Please try again.
+      {/* Subjects Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Available Subjects</CardTitle>
+          <p className="text-muted-foreground text-sm">
+            These subjects will be included in the priority form.
+          </p>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {formSent ? (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center space-y-4">
-              <div className="bg-green-100 text-green-700 p-4 rounded-md">
-                ✅ Priority form has been sent to lecturers successfully!
-              </div>
-              <p className="text-muted-foreground">
-                Deadline: {deadline}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Subjects included: {subjects.length}
-              </p>
-              <Button onClick={handleResetForm} variant="outline">
-                Create New Form
-              </Button>
+          ) : subjects.length === 0 ? (
+            <div className="py-6 text-muted-foreground text-center">
+              <p>No subjects found for the selected academic year.</p>
             </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          {/* Deadline Selection */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Calendar className="w-5 h-5" />
-                Set Priority Form Deadline
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Label htmlFor="deadline">Submission Deadline</Label>
-                <Input
-                  id="deadline"
-                  type="datetime-local"
-                  value={deadline}
-                  onChange={(e) => setDeadline(e.target.value)}
-                  className="w-full max-w-md"
-                />
-                <p className="text-sm text-muted-foreground">
-                  Select the deadline by which lecturers must submit their subject preferences.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Subjects List */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Available Subjects for Priority Selection</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                These subjects will be included in the priority form sent to lecturers.
-              </p>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="w-6 h-6 animate-spin" />
-                    <span>Loading subjects...</span>
+          ) : (
+            <div className="gap-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+              {subjects.map((subject) => (
+                <div
+                  key={subject.subject_id}
+                  className="bg-card shadow-sm hover:shadow-md p-4 border rounded-lg transition-shadow"
+                >
+                  <div className="space-y-1">
+                    <h3 className="font-semibold text-foreground text-base">{subject.subject_name}</h3>
+                    <p className="font-mono text-muted-foreground text-sm">{subject.subject_code}</p>
+                    <p className="text-muted-foreground text-xs">Abbr: {subject.abbreviation}</p>
+                    <div className="flex justify-between items-center pt-2">
+                      <span className={`text-xs font-medium rounded-full px-2 py-0.5 ${getTypeColor(subject.subject_type)}`}>
+                        {getTypeLabel(subject.subject_type)}
+                      </span>
+                      <span className="text-muted-foreground text-xs">
+                        {subject.no_of_hours_required} hrs
+                      </span>
+                    </div>
                   </div>
                 </div>
-              ) : subjects.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>No subjects available for the selected year.</p>
-                  <p className="text-sm">Please make sure subjects are added for this academic year.</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {subjects.map((subject) => (
-                    <div
-                      key={subject.subject_id}
-                      className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-card"
-                    >
-                      <div className="space-y-2">
-                        <h3 className="font-semibold text-lg">{subject.subject_name}</h3>
-                        <p className="text-sm text-muted-foreground font-mono">{subject.subject_code}</p>
-                        <p className="text-xs text-muted-foreground">Abbr: {subject.abbreviation}</p>
-                        <div className="flex items-center justify-between">
-                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(subject.subject_type)}`}>
-                            {getTypeLabel(subject.subject_type)}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {subject.no_of_hours_required} hours
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-          {/* Submit Form */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold">Ready to Send Priority Form</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {deadline ? `Deadline: ${deadline}` : 'Please set a deadline first'}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {subjects.length > 0 ? `${subjects.length} subjects will be included` : 'No subjects available'}
-                  </p>
-                </div>
-                <Button 
-                  onClick={handleSubmitForm}
-                  disabled={!deadline || subjects.length === 0 || loading}
-                  className="flex items-center gap-2"
-                >
-                  <Send className="w-4 h-4" />
-                  Send Priority Form
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </>
-      )}
+      {/* Submit Section */}
+      <Card>
+        <CardContent className="flex justify-between items-center py-6">
+          <div>
+            <h3 className="font-semibold text-base">Ready to Send?</h3>
+            <p className="text-muted-foreground text-sm">
+              {deadline ? `Deadline: ${new Date(deadline).toLocaleString()}` : 'Please set a deadline.'}
+            </p>
+            <p className="text-muted-foreground text-sm">
+              {subjects.length > 0 ? `${subjects.length} subjects included.` : 'No subjects available.'}
+            </p>
+          </div>
+          <Button
+            onClick={handleSubmitForm}
+            disabled={!deadline || subjects.length === 0 || loading}
+            className="flex items-center gap-2"
+          >
+            <Send className="w-4 h-4" />
+            Send Priority Form
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

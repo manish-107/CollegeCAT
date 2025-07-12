@@ -8,6 +8,7 @@ GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
 
 DATABASE_URL = os.getenv("DATABASE_URL") or ""
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD") or ""
 
 FRONTEND_BASE_URL = "http://localhost:3001"
 

@@ -38,7 +38,7 @@ class AcademicYearWithBatchesResponse(BaseModel):
     batches: List[BatchResponse] = Field(..., description="List of batches associated with this academic year",examples=[BatchResponse(batch_id=1, section="A", noOfStudent=40, created_at=datetime.now())])
 
 class AcademicYearBatchCreate(BaseModel):
-    year: int = Field(..., description="Academic year ID")
+    year: str = Field(..., description="Academic year")
     batch: BatchBase = Field(..., description="Batch information to create")
 
 class AcademicYearBatchUpdate(BaseModel):

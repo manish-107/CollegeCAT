@@ -423,7 +423,7 @@ export const updateAllocations = <ThrowOnError extends boolean = false>(options:
 export const getAllTimetableFormats = <ThrowOnError extends boolean = false>(options?: Options<GetAllTimetableFormatsData, ThrowOnError>) => {
     return (options?.client ?? _heyApiClient).get<GetAllTimetableFormatsResponses, unknown, ThrowOnError>({
         responseType: 'json',
-        url: '/api/timetable/formats',
+        url: '/api/timetable-formats/formats',
         ...options
     });
 };
@@ -440,7 +440,7 @@ export const getAllTimetableFormats = <ThrowOnError extends boolean = false>(opt
 export const createTimetableFormat = <ThrowOnError extends boolean = false>(options: Options<CreateTimetableFormatData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).post<CreateTimetableFormatResponses, CreateTimetableFormatErrors, ThrowOnError>({
         responseType: 'json',
-        url: '/api/timetable/formats',
+        url: '/api/timetable-formats/formats',
         ...options,
         headers: {
             'Content-Type': 'application/json',
@@ -458,7 +458,7 @@ export const createTimetableFormat = <ThrowOnError extends boolean = false>(opti
 export const getTimetableFormatsByYear = <ThrowOnError extends boolean = false>(options: Options<GetTimetableFormatsByYearData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).get<GetTimetableFormatsByYearResponses, GetTimetableFormatsByYearErrors, ThrowOnError>({
         responseType: 'json',
-        url: '/api/timetable/formats/year/{year_id}',
+        url: '/api/timetable-formats/formats/year/{year_id}',
         ...options
     });
 };
@@ -473,7 +473,7 @@ export const getTimetableFormatsByYear = <ThrowOnError extends boolean = false>(
 export const getTimetableFormatsByYearAndBatch = <ThrowOnError extends boolean = false>(options: Options<GetTimetableFormatsByYearAndBatchData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).get<GetTimetableFormatsByYearAndBatchResponses, GetTimetableFormatsByYearAndBatchErrors, ThrowOnError>({
         responseType: 'json',
-        url: '/api/timetable/formats/year/{year_id}/batch/{batch_id}',
+        url: '/api/timetable-formats/formats/year/{year_id}/batch/{batch_id}',
         ...options
     });
 };
@@ -487,7 +487,7 @@ export const getTimetableFormatsByYearAndBatch = <ThrowOnError extends boolean =
 export const deleteTimetableFormat = <ThrowOnError extends boolean = false>(options: Options<DeleteTimetableFormatData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).delete<DeleteTimetableFormatResponses, DeleteTimetableFormatErrors, ThrowOnError>({
         responseType: 'json',
-        url: '/api/timetable/formats/{format_id}',
+        url: '/api/timetable-formats/formats/{format_id}',
         ...options
     });
 };
@@ -501,7 +501,7 @@ export const deleteTimetableFormat = <ThrowOnError extends boolean = false>(opti
 export const getTimetableFormatById = <ThrowOnError extends boolean = false>(options: Options<GetTimetableFormatByIdData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).get<GetTimetableFormatByIdResponses, GetTimetableFormatByIdErrors, ThrowOnError>({
         responseType: 'json',
-        url: '/api/timetable/formats/{format_id}',
+        url: '/api/timetable-formats/formats/{format_id}',
         ...options
     });
 };
@@ -517,7 +517,7 @@ export const getTimetableFormatById = <ThrowOnError extends boolean = false>(opt
 export const updateTimetableFormat = <ThrowOnError extends boolean = false>(options: Options<UpdateTimetableFormatData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).put<UpdateTimetableFormatResponses, UpdateTimetableFormatErrors, ThrowOnError>({
         responseType: 'json',
-        url: '/api/timetable/formats/{format_id}',
+        url: '/api/timetable-formats/formats/{format_id}',
         ...options,
         headers: {
             'Content-Type': 'application/json',
