@@ -32,7 +32,7 @@ const stepPaths = [
   '7-finalize-subjects',
   '8-create-timetable',
   // '9-format-review',
-  '10-autogenerate-timetable',
+  '10-generate-timetable',
   // '11-hod-edit-timetable',
   '12-finalize-timetable',
 ];
@@ -63,11 +63,11 @@ function TimetableCoordinatorSidebar({
   };
 
   return (
-    <div className="w-[280px] flex-shrink-0 h-full bg-sidebar text-[var(--sidebar-foreground)] overflow-y-auto pb-6 border-r-[1px] border-[var(--sidebar-border)]">
+    <div className="flex-shrink-0 bg-sidebar pb-6 border-[var(--sidebar-border)] border-r-[1px] w-[280px] h-full overflow-y-auto text-[var(--sidebar-foreground)]">
       <div className="p-4">
         {/* Header */}
         <div className="flex items-center mb-10 px-2">
-          <div className="h-6 w-full rounded-sm flex items-center justify-center text-[var(--sidebar-foreground)] font-bold text-sm">
+          <div className="flex justify-center items-center rounded-sm w-full h-6 font-bold text-[var(--sidebar-foreground)] text-sm">
             Timetable Coordinator
           </div>
         </div>
@@ -75,8 +75,8 @@ function TimetableCoordinatorSidebar({
         {/* Year Display */}
         {selectedYear && (
           <div className="mb-4 px-2">
-            <div className="text-sm font-medium text-muted-foreground">Academic Year</div>
-            <div className="text-lg font-medium">{selectedYear}</div>
+            <div className="font-medium text-muted-foreground text-sm">Academic Year</div>
+            <div className="font-medium text-lg">{selectedYear}</div>
           </div>
         )}
 
@@ -86,7 +86,7 @@ function TimetableCoordinatorSidebar({
         <div className="space-y-4 mb-6">
           {/* Step 1: Create Year & Batch */}
           <Link href="/dashboard/timetable-coordinators/1-create-year" passHref>
-            <div className="flex mb-2 items-center px-3 py-2 text-sm rounded-md hover:bg-[var(--sidebar-accent)] group bg-[var(--sidebar-accent)]/50 border border-[var(--sidebar-border)]">
+            <div className="group flex items-center bg-[var(--sidebar-accent)]/50 hover:bg-[var(--sidebar-accent)] mb-2 px-3 py-2 border border-[var(--sidebar-border)] rounded-md text-sm">
               <Calendar size={16} className="mr-2 text-green-500" />
               <span className="flex-1 font-medium">Step 1: Create Year & Batch</span>
             </div>
@@ -136,8 +136,8 @@ function TimetableCoordinatorSidebar({
    {/* Selected Batch Display */}
    {selectedBatch && (
           <div className="mb-4 px-2">
-            <div className="text-sm font-medium text-muted-foreground">Selected Batch</div>
-            <div className="text-sm font-medium  bg-[var(--sidebar-accent)] p-2 rounded border border-[var(--sidebar-border)]">
+            <div className="font-medium text-muted-foreground text-sm">Selected Batch</div>
+            <div className="bg-[var(--sidebar-accent)] p-2 border border-[var(--sidebar-border)] rounded font-medium text-sm">
               {selectedBatch.section} ({selectedBatch.noOfStudent} students)
             </div>
           </div>
@@ -161,12 +161,12 @@ function TimetableCoordinatorSidebar({
                   />
                   <Users size={16} className="mr-2 text-blue-400" />
                   <span className="flex-1 text-left">{batch.section}</span>
-                  <span className="text-xs text-muted-foreground">({batch.noOfStudent} students)</span>
+                  <span className="text-muted-foreground text-xs">({batch.noOfStudent} students)</span>
                 </button>
 
                 {/* Steps under each batch - Starting from Step 5 */}
                 {expandedBatches[batch.section || ''] && (
-                  <div className="ml-6 mt-1 space-y-1">
+                  <div className="space-y-1 mt-1 ml-6">
                     {steps.slice(4).map((step, stepIndex) => (
                       <div key={`step-${stepIndex + 5}`} className="mb-1">
                         <Link href={`/dashboard/timetable-coordinators/${stepPaths[stepIndex + 4]}`} passHref>
@@ -187,7 +187,7 @@ function TimetableCoordinatorSidebar({
               </div>
             ))
           ) : (
-            <div className="px-2 py-4 text-sm text-muted-foreground">
+            <div className="px-2 py-4 text-muted-foreground text-sm">
               No batches available. Please create a year and batch first.
             </div>
           )}
@@ -195,7 +195,7 @@ function TimetableCoordinatorSidebar({
 
         {/* Logout */}
         <div className="mt-auto pt-4">
-          <Button className="w-full rounded-md text-sm font-medium">
+          <Button className="rounded-md w-full font-medium text-sm">
             Logout
           </Button>
         </div>
@@ -217,14 +217,14 @@ const CoordinatorLayout = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <div className="flex h-screen bg-[var(--background)]">
+    <div className="flex bg-[var(--background)] h-screen">
       {sidebarOpen && (
         <TimetableCoordinatorSidebar 
           currentStep={currentStep} 
           onStepClick={handleStepClick} 
         />
       )}
-      <div className="flex-1 flex flex-col">
+      <div className="flex flex-col flex-1">
         <Header onToggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} />
         <main className="flex-1 p-4 overflow-auto">{children}</main>
       </div>

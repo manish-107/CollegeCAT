@@ -11,11 +11,12 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Save, AlertCircle } from 'lucide-react';
 import { useYearBatch } from '@/app/dashboard/context/YearBatchContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
+import {
   createTimetableFormatMutation,
-  getYearsWithBatchesOptions
+  getYearsWithBatchesOptions, getAllTimetableFormatsQueryKey
 } from '@/app/client/@tanstack/react-query.gen';
 import { toast } from 'sonner';
+import Link from 'next/link';
 
 type PeriodType = 'empty' | 'class' | 'lab' | 'break';
 
@@ -57,8 +58,8 @@ const TimetableFormatPage = () => {
 
   // Initialize timetable with 9 periods and proper breaks
   const initializeTimetable = (): TimetableDay[] => {
-    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-    
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
     return days.map(day => ({
       day,
       periods: [
@@ -77,6 +78,69 @@ const TimetableFormatPage = () => {
 
   const [timetable, setTimetable] = useState<TimetableDay[]>(initializeTimetable());
 
+  const convertToApiFormat = () => {
+    const compressPeriods = (periods: Period[]): number[] => {
+      const result: number[] = [];
+      let i = 0;
+
+      while (i < periods.length) {
+        const period = periods[i];
+
+        if (period.isBreak || period.type === 'empty') {
+          i++;
+          continue;
+        }
+
+        if (period.type === 'lab') {
+          result.push(3);
+
+          // Skip the next 2 non-break lab periods
+          let labSkipped = 1; // already counted this lab
+          i++;
+
+          while (i < periods.length && labSkipped < 3) {
+            if (!periods[i].isBreak && periods[i].type === 'lab') {
+              labSkipped++;
+            }
+            i++;
+          }
+
+          continue; // go to next outer loop iteration
+        }
+
+        if (period.type === 'class') {
+          result.push(1);
+          i++;
+        } else {
+          i++;
+        }
+      }
+
+      return result;
+    };
+
+
+const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+const apiData = {
+  year_id: yearId!,
+  batch_id: selectedBatch?.batch_id!,
+  format_name: `Timetable Format - ${selectedYear} - ${selectedBatch?.section} - ${randomSuffix}`,
+  format_data: {
+    monday: compressPeriods(timetable[0].periods),
+    tuesday: compressPeriods(timetable[1].periods),
+    wednesday: compressPeriods(timetable[2].periods),
+    thursday: compressPeriods(timetable[3].periods),
+    friday: compressPeriods(timetable[4].periods),
+    saturday: compressPeriods(timetable[5].periods),
+  }
+};
+
+    console.log("Compressed Format:", apiData);
+    return apiData;
+  };
+
+
   const handlePeriodChange = (dayIndex: number, periodIndex: number) => {
     const updatedTimetable = [...timetable];
     const day = updatedTimetable[dayIndex];
@@ -87,7 +151,7 @@ const TimetableFormatPage = () => {
 
     // Cycle through: empty → class → lab → empty
     let newType: PeriodType = 'empty';
-    
+
     if (period.type === 'empty') {
       newType = 'class';
     } else if (period.type === 'class') {
@@ -127,7 +191,7 @@ const TimetableFormatPage = () => {
   const checkLabCreation = (periods: Period[], startIndex: number): boolean => {
     let labCount = 1; // Start with the current period
     let checkedCount = 0;
-    
+
     // Check next periods for lab creation (excluding breaks)
     for (let i = startIndex + 1; i < periods.length && labCount < 3; i++) {
       if (!periods[i].isBreak) {
@@ -135,14 +199,14 @@ const TimetableFormatPage = () => {
       }
       checkedCount++;
     }
-    
+
     return labCount >= 3;
   };
 
   const clearLabBlock = (periods: Period[], periodIndex: number) => {
     // Find the start of the lab block
     let start = periodIndex;
-    
+
     // Look backwards to find the start
     for (let i = periodIndex - 1; i >= 0; i--) {
       if (periods[i].type === 'lab' && !periods[i].isBreak) {
@@ -151,7 +215,7 @@ const TimetableFormatPage = () => {
         break;
       }
     }
-    
+
     // Clear all 3 lab periods (excluding breaks)
     let clearedCount = 0;
     for (let i = start; i < periods.length && clearedCount < 3; i++) {
@@ -164,11 +228,11 @@ const TimetableFormatPage = () => {
 
   const getPeriodStyle = (period: Period) => {
     const baseClasses = "border rounded-md text-xs cursor-pointer transition-all font-medium";
-    
+
     if (period.isBreak) {
       return `${baseClasses} text-yellow-500  text-xs border-yellow-500 bg-input/30 hover:bg-input/50 cursor-not-allowed`;
     }
-    
+
     switch (period.type) {
       case 'class':
         return `${baseClasses}  text-blue-600 border-blue-600 bg-input/30 hover:bg-input/50`;
@@ -184,7 +248,7 @@ const TimetableFormatPage = () => {
     if (period.isBreak) {
       return period.startTime === '10:50 AM' ? 'Morning Break' : 'Lunch Break';
     }
-    
+
     switch (period.type) {
       case 'class':
         return 'Class';
@@ -196,47 +260,6 @@ const TimetableFormatPage = () => {
     }
   };
 
-  const convertToApiFormat = () => {
-    const apiData = {
-      year_id: yearId!,
-      batch_id: selectedBatch?.batch_id!,
-      format_name: `Timetable Format - ${selectedYear} - ${selectedBatch?.section}`,
-      format_data: {
-        monday: timetable[0].periods.map(p => {
-          if (p.isBreak) return 0;
-          if (p.type === 'class') return 1;
-          if (p.type === 'lab') return 3;
-          return 0;
-        }),
-        tuesday: timetable[1].periods.map(p => {
-          if (p.isBreak) return 0;
-          if (p.type === 'class') return 1;
-          if (p.type === 'lab') return 3;
-          return 0;
-        }),
-        wednesday: timetable[2].periods.map(p => {
-          if (p.isBreak) return 0;
-          if (p.type === 'class') return 1;
-          if (p.type === 'lab') return 3;
-          return 0;
-        }),
-        thursday: timetable[3].periods.map(p => {
-          if (p.isBreak) return 0;
-          if (p.type === 'class') return 1;
-          if (p.type === 'lab') return 3;
-          return 0;
-        }),
-        friday: timetable[4].periods.map(p => {
-          if (p.isBreak) return 0;
-          if (p.type === 'class') return 1;
-          if (p.type === 'lab') return 3;
-          return 0;
-        })
-      }
-    };
-    
-    return apiData;
-  };
 
   const saveTimetable = async () => {
     if (!yearId || !selectedBatch?.batch_id) {
@@ -246,7 +269,7 @@ const TimetableFormatPage = () => {
 
     setIsSaving(true);
     const apiData = convertToApiFormat();
-    
+
     try {
       await createTimetableMutation.mutateAsync({
         body: apiData
@@ -261,32 +284,38 @@ const TimetableFormatPage = () => {
     toast.success('Timetable reset to default format');
   };
 
-    return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+  return (
+    <div className="space-y-6 mx-auto p-6 max-w-7xl">
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-xl">
             <span>Create Timetable Format</span>
             {selectedYear && selectedBatch && (
-              <span className="text-sm font-normal text-muted-foreground">
+              <span className="font-normal text-muted-foreground text-sm">
                 ({selectedYear} - {selectedBatch.section})
               </span>
             )}
           </CardTitle>
+          <div className="ml-auto">
+            <Link href="/dashboard/timetable-coordinators/8-create-timetable/viewformats">
+              <Button variant="outline" size="sm">View Saved Formats</Button>
+            </Link>
+          </div>
         </CardHeader>
+
         <CardContent>
           {!selectedYear || !selectedBatch ? (
-            <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-4 rounded-lg border border-amber-200">
+            <div className="flex items-center gap-2 bg-amber-50 p-4 border border-amber-200 rounded-lg text-amber-600">
               <AlertCircle className="w-5 h-5" />
               <span>Please select an academic year and batch to create timetable format.</span>
             </div>
           ) : (
             <>
-              <div className="mb-6 space-y-4">
-                <div className="flex items-center justify-between">
+              <div className="space-y-4 mb-6">
+                <div className="flex justify-between items-center">
                   <div className="space-y-2">
-                    <h3 className="text-lg font-semibold">Schedule Structure</h3>
-                    <div className="text-sm text-muted-foreground space-y-1">
+                    <h3 className="font-semibold text-lg">Schedule Structure</h3>
+                    <div className="space-y-1 text-muted-foreground text-sm">
                       <div>• 9 periods per day (55 minutes each)</div>
                       <div>• Morning break: 10:50 AM - 11:05 AM (15 minutes)</div>
                       <div>• Lunch break: 12:55 PM - 2:00 PM (65 minutes)</div>
@@ -294,26 +323,26 @@ const TimetableFormatPage = () => {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       onClick={resetTimetable}
                       size="sm"
                     >
                       Reset
                     </Button>
-                    <Button 
+                    <Button
                       onClick={saveTimetable}
                       disabled={isSaving}
                       size="sm"
                     >
                       {isSaving ? (
                         <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          <Loader2 className="mr-2 w-4 h-4 animate-spin" />
                           Saving...
                         </>
                       ) : (
                         <>
-                          <Save className="w-4 h-4 mr-2" />
+                          <Save className="mr-2 w-4 h-4" />
                           Save Format
                         </>
                       )}
@@ -324,56 +353,55 @@ const TimetableFormatPage = () => {
                 {/* Legend */}
                 <div className="flex flex-wrap gap-4 text-sm">
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-blue-500 rounded border"></div>
+                    <div className="bg-blue-500 border rounded w-4 h-4"></div>
                     <span>Class Period</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-green-500 rounded border"></div>
+                    <div className="bg-green-500 border rounded w-4 h-4"></div>
                     <span>Lab Period (3 consecutive)</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-yellow-100 border border-yellow-300 rounded"></div>
+                    <div className="bg-yellow-100 border border-yellow-300 rounded w-4 h-4"></div>
                     <span>Break Period</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-gray-50 border border-gray-200 rounded"></div>
+                    <div className="bg-gray-50 border border-gray-200 rounded w-4 h-4"></div>
                     <span>Empty Period</span>
                   </div>
                 </div>
-        </div>
-  
+              </div>
+
               {/* Timetable Grid */}
               <div className="space-y-6">
                 {timetable.map((day, dayIndex) => (
                   <div key={day.day} className="space-y-3">
-                    <h3 className="text-lg font-bold border-b pb-2">
+                    <h3 className="pb-2 border-b font-bold text-lg">
                       {day.day}
                     </h3>
-                    <div className="grid grid-cols-25 gap-1">
+                    <div className="gap-1 grid grid-cols-25">
                       {day.periods.map((period, periodIndex) => (
-                <div
-                  key={periodIndex}
-                          className={`${ 
-                            period.isBreak ? 'col-span-2' : 'col-span-3'
-                          } ${getPeriodStyle(period)}`}
+                        <div
+                          key={periodIndex}
+                          className={`${period.isBreak ? 'col-span-2' : 'col-span-3'
+                            } ${getPeriodStyle(period)}`}
                           onClick={() => handlePeriodChange(dayIndex, periodIndex)}
                         >
-                          <div className="text-center py-2">
+                          <div className="py-2 text-center">
                             <div className="font-semibold text-xs">{getPeriodText(period)}</div>
-                            <div className="text-xs opacity-75 mt-1">
+                            <div className="opacity-75 mt-1 text-xs">
                               {period.startTime} - {period.endTime}
                             </div>
                           </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
 
-              <div className="mt-6 p-4  border border-blue-200 rounded-lg">
-                <h4 className="font-semibold  mb-2">Instructions:</h4>
-                <ul className="text-sm  space-y-1">
+              <div className="mt-6 p-4 border border-blue-200 rounded-lg">
+                <h4 className="mb-2 font-semibold">Instructions:</h4>
+                <ul className="space-y-1 text-sm">
                   <li>• Click on empty periods to cycle: Empty → Class → Lab → Empty</li>
                   <li>• Lab periods automatically create 3 consecutive periods</li>
                   <li>• Only one lab slot (3 periods) can be selected per day</li>

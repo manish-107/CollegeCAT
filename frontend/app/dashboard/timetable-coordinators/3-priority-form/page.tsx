@@ -122,7 +122,7 @@ export default function CreatePriorityFormPage() {
             type="datetime-local"
             value={deadline}
             onChange={(e) => setDeadline(e.target.value)}
-            className="max-w-sm"
+            className="max-w-sm cursor-pointer"
           />
           <p className="text-muted-foreground text-sm">
             Select the deadline by which lecturers must submit their subject preferences.
@@ -189,7 +189,7 @@ export default function CreatePriorityFormPage() {
           <Button
             onClick={handleSubmitForm}
             disabled={!deadline || subjects.length === 0 || loading}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 cursor-pointer"
           >
             <Send className="w-4 h-4" />
             Send Priority Form

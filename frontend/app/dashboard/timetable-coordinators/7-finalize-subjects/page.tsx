@@ -4,16 +4,15 @@ import { useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+
 import { useYearBatch } from '@/app/dashboard/context/YearBatchContext';
 import { useQuery } from '@tanstack/react-query';
-import { 
+import {
   getAllocationsByYearOptions,
   getYearsWithBatchesOptions
 } from '@/app/client/@tanstack/react-query.gen';
 import type { FacultySubjectAllocationResponse } from '@/app/client/types.gen';
-
+import { toast } from 'sonner';
 const getTypeColor = (type: string) => {
   switch (type) {
     case 'CORE': return 'bg-blue-100 text-blue-800';
@@ -42,10 +41,10 @@ export default function FinalizeSubjectsPage() {
   const yearId = selectedYearData?.year_id;
 
   // Fetch allocations for the selected year
-  const { 
-    data: allocationsData, 
-    isLoading, 
-    error: fetchError 
+  const {
+    data: allocationsData,
+    isLoading,
+    error: fetchError
   } = useQuery({
     ...getAllocationsByYearOptions({ path: { year_id: yearId! } }),
     enabled: !!yearId
@@ -54,55 +53,27 @@ export default function FinalizeSubjectsPage() {
   const allocations = allocationsData?.allocations || [];
 
   // Filter allocations by selected batch
-  const filteredAllocations = selectedBatch 
+  const filteredAllocations = selectedBatch
     ? allocations.filter(allocation => allocation.batch_section === selectedBatch.section)
     : allocations;
 
   // Remove duplicates based on subject_id and batch_id combination
-  const uniqueAllocations = filteredAllocations.filter((allocation, index, self) => 
-    index === self.findIndex(a => 
+  const uniqueAllocations = filteredAllocations.filter((allocation, index, self) =>
+    index === self.findIndex(a =>
       a.subject_id === allocation.subject_id && a.batch_id === allocation.batch_id
     )
   );
 
-  const handleDownloadPDF = async () => {
-    const input = cardRef.current;
-    if (!input) {
-      console.error('Card ref not found');
-      return;
-    }
-
-    try {
-      const canvas = await html2canvas(input, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff'
-      });
-      
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({ 
-        orientation: 'landscape',
-        unit: 'mm',
-        format: 'a4'
-      });
-      
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-      
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`Subject_Allocation_${selectedBatch?.section || 'All'}_${selectedYear || 'Unknown'}.pdf`);
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      alert('Failed to generate PDF. Please try again.');
-    }
+  const handleDownloadPDF = () => {
+    console.log("handleDownloadPDF")
+    toast.success("Download pdf")
   };
+
 
   if (isLoading) {
     return (
-      <div className="p-6 max-w-5xl mx-auto space-y-8">
-        <div className="flex items-center justify-center py-8">
+      <div className="space-y-8 mx-auto p-6 max-w-5xl">
+        <div className="flex justify-center items-center py-8">
           <div className="flex items-center gap-2">
             <Loader2 className="w-6 h-6 animate-spin" />
             <span>Loading allocations...</span>
@@ -114,8 +85,8 @@ export default function FinalizeSubjectsPage() {
 
   if (fetchError) {
     return (
-      <div className="p-6 max-w-5xl mx-auto space-y-8">
-        <div className="text-center py-8">
+      <div className="space-y-8 mx-auto p-6 max-w-5xl">
+        <div className="py-8 text-center">
           <div className="text-red-700">
             <strong>Error:</strong> Failed to fetch allocations. Please try again.
           </div>
@@ -125,36 +96,16 @@ export default function FinalizeSubjectsPage() {
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-8">
-      <h2 className="text-2xl font-bold mb-6 text-center">Finalize Subject Allocation</h2>
-      
-      {/* Year and Batch Context */}
-      <Card className="bg-blue-50 border-blue-200">
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-blue-900">Current Context</h3>
-              <div className="text-sm text-blue-700 mt-1">
-                <span className="font-medium">Academic Year:</span> {selectedYear || 'Not selected'}
-              </div>
-              {selectedBatch && (
-                <div className="text-sm text-blue-700 mt-1">
-                  <span className="font-medium">Selected Batch:</span> {selectedBatch.section} ({selectedBatch.noOfStudent} students)
-                </div>
-              )}
-            </div>
-            <div className="text-right">
-              <div className="text-sm text-blue-600">Subject allocations from API</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="space-y-8 mx-auto p-6 max-w-5xl">
+      <h2 className="mb-6 font-bold text-2xl text-center">Finalize Subject Allocation</h2>
 
-      <Card className="border-2 border-primary/30 shadow-sm hover:shadow-lg transition-all">
+
+
+      <Card className="shadow-sm hover:shadow-lg border-2 border-primary/30 transition-all">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex justify-between items-center">
             <CardTitle className="text-lg">
-              {selectedBatch ? `${selectedBatch.section}` : 'All Batches'} <span className="text-muted-foreground font-normal">({selectedYear})</span>
+              {selectedBatch ? `${selectedBatch.section}` : 'All Batches'} <span className="font-normal text-muted-foreground">({selectedYear})</span>
             </CardTitle>
             <Button onClick={handleDownloadPDF} size="sm" disabled={uniqueAllocations.length === 0}>
               Download PDF
@@ -163,21 +114,21 @@ export default function FinalizeSubjectsPage() {
         </CardHeader>
         <CardContent ref={cardRef}>
           {uniqueAllocations.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              {selectedBatch 
+            <p className="text-muted-foreground text-sm">
+              {selectedBatch
                 ? `No subjects allocated for batch ${selectedBatch.section} yet.`
                 : 'No subjects allocated yet.'
               }
             </p>
           ) : (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="gap-2 grid grid-cols-2">
               {uniqueAllocations.map((allocation) => (
                 <div
                   key={allocation.allocation_id}
-                  className="border rounded-lg p-4 bg-muted/50 flex flex-col gap-2"
+                  className="flex flex-col gap-2 bg-muted/50 p-4 border rounded-lg"
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-mono text-xs px-2 py-1 rounded-full bg-gray-100 border border-gray-200 text-gray-700">
+                    <span className="bg-gray-100 px-2 py-1 border border-gray-200 rounded-full font-mono text-gray-700 text-xs">
                       {allocation.subject_code}
                     </span>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(allocation.subject_type)}`}>
@@ -185,13 +136,13 @@ export default function FinalizeSubjectsPage() {
                     </span>
                   </div>
                   <div className="font-semibold text-base">{allocation.subject_name}</div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-muted-foreground text-sm">
                     <span className="font-medium">Lecturer:</span> {allocation.faculty_name}
                   </div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-muted-foreground text-xs">
                     <span className="font-medium">Email:</span> {allocation.faculty_email}
                   </div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-muted-foreground text-xs">
                     <span className="font-medium">Priority:</span> {allocation.allocated_priority}
                   </div>
                 </div>

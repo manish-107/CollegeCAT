@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Card,
   CardHeader,
@@ -13,12 +13,14 @@ import { Pencil, X, Loader2, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useYearBatch } from '@/app/dashboard/context/YearBatchContext';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { 
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
   autoAllocateSubjectsForYearMutation,
-  getYearsWithBatchesOptions
+  getAllocationsByYearOptions,
+  getYearsWithBatchesOptions, updateAllocationsMutation, getAllUsersOptions
 } from '@/app/client/@tanstack/react-query.gen';
-import type { FacultySubjectAllocationResponse } from '@/app/client/types.gen';
+import type { FacultySubjectAllocationResponse, AllocationUpdateRequest } from '@/app/client/types.gen';
+import { toast } from 'sonner';
 
 const subjectTypes = [
   { value: 'CORE', label: 'Core Subject' },
@@ -29,11 +31,11 @@ const subjectTypes = [
 
 const getTypeColor = (type: string) => {
   switch (type) {
-    case 'CORE': return 'bg-blue-100 text-blue-800';
-    case 'ELECTIVE': return 'bg-green-100 text-green-800';
-    case 'LAB': return 'bg-purple-100 text-purple-800';
-    case 'PROJECT': return 'bg-orange-100 text-orange-800';
-    default: return 'bg-gray-100 text-gray-800';
+    case 'CORE': return 'bg-blue-200 border border-blue-400 text-blue-900';
+    case 'ELECTIVE': return 'bg-green-200 border border-green-400 text-green-900';
+    case 'LAB': return 'bg-purple-200 border border-purple-400 text-purple-900';
+    case 'PROJECT': return 'bg-orange-200 border border-orange-400 text-orange-900';
+    default: return 'bg-gray-200 border border-gray-400 text-gray-800';
   }
 };
 
@@ -48,41 +50,57 @@ const getTypeLabel = (type: string) => {
 };
 
 export default function AutoAssignmentPage() {
-  const { selectedYear, selectedBatch, batches } = useYearBatch();
+  const { selectedYear, selectedBatch } = useYearBatch();
   const [allocations, setAllocations] = useState<FacultySubjectAllocationResponse[]>([]);
-  const [isSentToHod, setIsSentToHod] = useState(false);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<FacultySubjectAllocationResponse | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
-  // Fetch academic years to get year_id
+  const queryClient = useQueryClient();
+
   const { data: yearsData } = useQuery(getYearsWithBatchesOptions());
   const selectedYearData = yearsData?.items?.find(item => item.academic_year === selectedYear);
   const yearId = selectedYearData?.year_id;
 
-  // Auto allocate mutation
   const autoAllocateMutation = useMutation(autoAllocateSubjectsForYearMutation());
+  const updateAllocationMutation = useMutation(updateAllocationsMutation());
 
-  // Filter allocations by selected batch
-  const filteredAllocations = selectedBatch 
-    ? allocations.filter(allocation => allocation.batch_section === selectedBatch.section)
+  const { data: usersData, isLoading: isUsersLoading } = useQuery(getAllUsersOptions());
+  const facultyUsers = usersData?.filter(u => u.role === 'FACULTY') || [];
+
+  const {
+    data: allocationsData,
+    isLoading,
+    error: fetchError
+  } = useQuery({
+    ...getAllocationsByYearOptions({ path: { year_id: yearId! } }),
+    enabled: !!yearId
+  });
+
+  useEffect(() => {
+    if (allocationsData?.allocations) {
+      setAllocations(allocationsData.allocations);
+    }
+  }, [allocationsData]);
+
+
+  const filteredAllocations = selectedBatch
+    ? allocations.filter(a => a.batch_section === selectedBatch.section)
     : allocations;
 
+
+
   const handleAutoAssign = async () => {
-    if (!yearId) {
-      return;
-    }
+    if (!yearId) return;
 
     try {
-      const result = await autoAllocateMutation.mutateAsync({
-        path: { year_id: yearId }
+      const result = await autoAllocateMutation.mutateAsync({ path: { year_id: yearId } });
+      await queryClient.invalidateQueries({
+        queryKey: getAllocationsByYearOptions({ path: { year_id: yearId } }).queryKey
       });
-
-      setAllocations(result.allocations || []);
-      setSuccess(`Successfully allocated ${result.total_allocations} subjects to lecturers`);
-    } catch (error: any) {
+      toast.success(`Successfully allocated ${result.total_allocations} subjects to faculties`);
+    } catch (error) {
       console.error('Error in auto assignment:', error);
-      // Error handling is managed by the mutation
+      toast.error('Unable to allocate subjects');
     }
   };
 
@@ -91,108 +109,102 @@ export default function AutoAssignmentPage() {
     setEditForm(allocations[idx]);
   };
 
-  const handleEditChange = (field: keyof FacultySubjectAllocationResponse, value: string) => {
+  const handleEditChange = (field: keyof FacultySubjectAllocationResponse, value: any) => {
     if (!editForm) return;
     setEditForm({ ...editForm, [field]: value });
   };
 
-  const handleEditSave = () => {
+  const handleEditSave = async () => {
     if (editingIdx !== null && editForm) {
-      const updated = [...allocations];
-      updated[editingIdx] = editForm;
-      setAllocations(updated);
-      setEditingIdx(null);
-      setEditForm(null);
+      try {
+        await updateAllocationMutation.mutateAsync({
+          body: {
+            allocation_id: editForm.allocation_id,
+            faculty_id: editForm.faculty_id,
+            co_faculty_id: editForm.co_faculty_id,
+            venue: editForm.venue
+          },
+        });
+
+        toast.success('Allocation updated successfully');
+        await queryClient.invalidateQueries({
+          queryKey: getAllocationsByYearOptions({ path: { year_id: yearId! } }).queryKey,
+        });
+
+        setEditingIdx(null);
+        setEditForm(null);
+      } catch (err) {
+        console.error('Failed to update allocation:', err);
+        toast.error('Failed to update allocation');
+      }
     }
   };
+
 
   const handleEditCancel = () => {
     setEditingIdx(null);
     setEditForm(null);
   };
 
-  const handleSendToHod = () => {
-    setIsSentToHod(true);
+  const handleSendToHod = async () => {
+    if (!selectedYear || !selectedBatch) {
+      toast.error("Year or Batch not selected");
+      return;
+    }
+
+    const payload = {
+      notification: `Subject allocations have been finalized for ${selectedYear} - ${selectedBatch.section}`,
+      date: new Date().toISOString(),
+      role: 'HOD',
+    };
+
+    try {
+      const res = await fetch('/api/notifications?type=hod', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        toast.success('HOD has been notified!');
+      } else {
+        toast.error('Failed to notify HOD');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Something went wrong');
+    }
   };
 
+
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8">
-      <h2 className="text-2xl font-bold mb-6 text-center">Auto Subject Assignment &amp; Send to HOD</h2>
-      
-      {/* Year Context */}
-      <Card className="bg-blue-50 border-blue-200">
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-blue-900">Current Context</h3>
-              <div className="text-sm text-blue-700 mt-1">
-                <span className="font-medium">Academic Year:</span> {selectedYear || 'Not selected'}
-              </div>
-              {selectedBatch && (
-                <div className="text-sm text-blue-700 mt-1">
-                  <span className="font-medium">Selected Batch:</span> {selectedBatch.section} ({selectedBatch.noOfStudent} students)
-                </div>
-              )}
-            </div>
-            <div className="text-right">
-              <div className="text-sm text-blue-600">Auto assignment based on lecturer priorities</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="space-y-8 mx-auto p-6 max-w-7xl">
+      <h2 className="mb-6 font-bold text-2xl text-center">Auto Subject Assignment &amp; Send to HOD</h2>
 
-      {autoAllocateMutation.error && (
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="pt-6">
-            <div className="text-red-700">
-              <strong>Error:</strong> Failed to auto assign subjects. Please try again.
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {success && (
-        <Card className="border-green-200 bg-green-50">
-          <CardContent className="pt-6">
-            <div className="text-green-700">
-              <strong>Success:</strong> {success}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Auto Assign Button */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-xl">
             <Zap className="w-5 h-5" />
             Auto Assignment Batch {selectedBatch ? ` ${selectedBatch.section}` : ''}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between">
+          <div className="flex justify-between items-center">
             <div>
-              <p className="text-sm text-muted-foreground">
-                Click the button below to automatically assign subjects to lecturers based on their priority selections.
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                This will process all lecturer priorities and create optimal assignments.
+              <p className="text-muted-foreground text-sm">
+                Automatically assign subjects based on faculty preferences.
               </p>
             </div>
-            <Button
-              onClick={handleAutoAssign}
-              disabled={!yearId || autoAllocateMutation.isPending}
-              className="flex items-center gap-2"
-            >
+            <Button disabled={!yearId || autoAllocateMutation.isPending || allocations.length > 0} onClick={handleAutoAssign} >
               {autoAllocateMutation.isPending ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Auto Assigning...
+                  <Loader2 className="w-4 h-4 animate-spin" /> Auto Assigning...
                 </>
               ) : (
                 <>
-                  <Zap className="w-4 h-4" />
-                  Auto Assign Subjects{selectedBatch ? ` - ${selectedBatch.section}` : ''}
+                  <Zap className="w-4 h-4" /> Auto Assign
                 </>
               )}
             </Button>
@@ -200,154 +212,120 @@ export default function AutoAssignmentPage() {
         </CardContent>
       </Card>
 
-      {/* Allocated Subjects */}
       <Card>
         <CardHeader>
           <CardTitle className="text-xl">Allocated Subjects ({filteredAllocations.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {filteredAllocations.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>
-                {selectedBatch 
-                  ? `No subjects have been allocated for batch ${selectedBatch.section} yet.`
-                  : 'No subjects have been allocated yet.'
-                }
-              </p>
-              <p className="text-sm">Click "Auto Assign Subjects" to start the allocation process.</p>
-            </div>
+            <p className="py-4 text-muted-foreground text-center">No allocations found.</p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {filteredAllocations.map((allocation, idx) => (
+            <div className="gap-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              {filteredAllocations.map((a, idx) => (
                 <div
-                  key={allocation.allocation_id}
-                  className="border-2 border-primary/30 rounded-lg p-4 bg-muted/50 shadow-sm hover:shadow-lg transition-all flex flex-col gap-2 relative"
+                  key={a.allocation_id}
+                  className="relative bg-muted/50 hover:shadow-lg p-4 border-2 border-primary/30 rounded"
                 >
-                  <button
-                    className="absolute top-2 right-2 text-primary hover:text-primary/80 z-10"
-                    onClick={() => handleEdit(idx)}
-                  >
+                  <button onClick={() => handleEdit(idx)} className="top-2 right-2 absolute text-primary">
                     <Pencil className="w-4 h-4" />
                   </button>
-                  
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-mono text-xs px-2 py-1 rounded-full bg-gray-100 border border-gray-200 text-gray-700">
-                      {allocation.subject_code}
+                    <span className="bg-gray-100 px-2 py-1 border rounded font-mono text-white dark:text-black text-xs">
+                      {a.subject_code}
                     </span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(allocation.subject_type)}`}>
-                      {getTypeLabel(allocation.subject_type)}
+                    <span className={`text-xs font-medium px-2 py-1 rounded ${getTypeColor(a.subject_type)}`}>
+                      {getTypeLabel(a.subject_type)}
                     </span>
                   </div>
-                  
-                  <div className="font-semibold text-base">{allocation.subject_name}</div>
-                  <div className="text-xs text-muted-foreground">Abbr: {allocation.abbreviation}</div>
-                  
-                  <div className="text-sm text-muted-foreground">
-                    <div><span className="font-medium">Lecturer:</span> {allocation.faculty_name}</div>
-                    <div className="text-xs">{allocation.faculty_email}</div>
-                  </div>
-                  
-                  <div className="text-sm text-muted-foreground">
-                    <div><span className="font-medium">Batch:</span> {allocation.batch_section} ({allocation.batch_noOfStudent} students)</div>
-                    <div><span className="font-medium">Priority:</span> {allocation.allocated_priority}</div>
-                  </div>
+                  <div className="font-semibold text-base">{a.subject_name}</div>
+                  <div className="text-muted-foreground text-sm">Faculty: {a.faculty_name}</div>
+                  <div className="text-muted-foreground text-sm">Faculty: {a.co_faculty_id}</div>
+                  <div className="text-muted-foreground text-sm">venue: {a.venue}</div>
+                  <div className="text-muted-foreground text-sm">Batch: {a.batch_section} ({a.batch_noOfStudent} students)</div>
                 </div>
               ))}
             </div>
           )}
-
-          {/* Edit Allocation Modal */}
           {editingIdx !== null && editForm && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <Card className="w-full max-w-md mx-4">
+            <div className="z-50 fixed inset-0 flex justify-center items-center bg-black bg-opacity-50">
+              <Card className="mx-4 w-full max-w-md">
                 <CardHeader>
-                  <div className="flex items-center justify-between">
+                  <div className="flex justify-between items-center">
                     <CardTitle className="text-lg">Edit Allocation</CardTitle>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleEditCancel}
-                      className="h-8 w-8 p-0"
-                    >
-                      <X className="h-4 w-4" />
+                    <Button variant="ghost" size="sm" onClick={handleEditCancel}>
+                      <X className="w-4 h-4" />
                     </Button>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="edit-subject-name">Subject Name</Label>
-                    <Input
-                      id="edit-subject-name"
-                      placeholder="Enter subject name"
-                      value={editForm.subject_name}
-                      onChange={(e) => handleEditChange('subject_name', e.target.value)}
-                    />
+                    <Label>Subject Name</Label>
+                    <Input value={editForm.subject_name} disabled />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="edit-subject-code">Subject Code</Label>
-                    <Input
-                      id="edit-subject-code"
-                      placeholder="e.g., CS101, MATH201"
-                      value={editForm.subject_code}
-                      onChange={(e) => handleEditChange('subject_code', e.target.value)}
-                    />
+                    <Label>Subject Code</Label>
+                    <Input value={editForm.subject_code} disabled />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="edit-lecturer">Lecturer Name</Label>
-                    <Input
-                      id="edit-lecturer"
-                      placeholder="Enter lecturer name"
-                      value={editForm.faculty_name}
-                      onChange={(e) => handleEditChange('faculty_name', e.target.value)}
-                    />
+                    <Label>Subject Type</Label>
+                    <Input value={editForm.subject_type} disabled />
                   </div>
+
                   <div className="space-y-2">
-                    <Label htmlFor="edit-lecturer-email">Lecturer Email</Label>
-                    <Input
-                      id="edit-lecturer-email"
-                      placeholder="Enter lecturer email"
-                      value={editForm.faculty_email}
-                      onChange={(e) => handleEditChange('faculty_email', e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-subject-type">Subject Type</Label>
+                    <Label>Faculty</Label>
                     <Select
-                      value={editForm.subject_type}
-                      onValueChange={(value: string) => handleEditChange('subject_type', value)}
+                      value={editForm.faculty_id?.toString()}
+                      onValueChange={(val) => handleEditChange('faculty_id', Number(editForm.faculty_id))}
+                      disabled={isUsersLoading}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select type" />
+                        <SelectValue placeholder="Select a faculty member" />
                       </SelectTrigger>
                       <SelectContent>
-                        {subjectTypes.map((type) => (
-                          <SelectItem key={type.value} value={type.value}>
-                            {type.label}
+                        {facultyUsers.map(user => (
+                          <SelectItem key={user.user_id} value={user.user_id.toString()}>
+                            {user.uname}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="flex gap-2 pt-4">
-                    <Button
-                      onClick={handleEditSave}
-                      className="flex-1"
-                      disabled={
-                        !editForm.subject_name.trim() ||
-                        !editForm.subject_code.trim() ||
-                        !editForm.faculty_name.trim() ||
-                        !editForm.subject_type
+
+                  <div className="space-y-2">
+                    <Label>Co-Faculty</Label>
+                    <Select
+                      value={editForm.co_faculty_id?.toString() ?? ''}
+                      onValueChange={(val) =>
+                        handleEditChange('co_faculty_id', val === '' ? null : Number(val))
                       }
+                      disabled={isUsersLoading}
                     >
-                      Save Changes
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={handleEditCancel}
-                      className="flex-1"
-                    >
-                      Cancel
-                    </Button>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a co-faculty (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {facultyUsers.map(user => (
+                          <SelectItem key={user.user_id} value={user.user_id.toString()}>
+                            {user.uname}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Venue</Label>
+                    <Input
+                      placeholder="Enter venue"
+                      value={editForm.venue ?? ''}
+                      onChange={(e) => handleEditChange('venue', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="flex gap-2 pt-4">
+                    <Button className="flex-1" onClick={handleEditSave}>Save</Button>
+                    <Button variant="outline" className="flex-1" onClick={handleEditCancel}>Cancel</Button>
                   </div>
                 </CardContent>
               </Card>
@@ -355,16 +333,9 @@ export default function AutoAssignmentPage() {
           )}
 
           <div className="flex justify-end mt-8">
-            {!isSentToHod ? (
-              <Button
-                onClick={handleSendToHod}
-                disabled={allocations.length === 0}
-              >
-                Send All Assignments to HOD
-              </Button>
-            ) : (
-              <span className="text-green-600 font-semibold text-lg">Sent to HOD successfully!</span>
-            )}
+            <Button onClick={handleSendToHod} disabled={allocations.length === 0}>
+              Notify HOD about Allocation
+            </Button>
           </div>
         </CardContent>
       </Card>

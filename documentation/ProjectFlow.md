@@ -404,7 +404,7 @@ Value: {
 │   │   │   └── 📄 page.tsx      # Step 8: Create timetable format  
 │   │   ├── 📁 9-format-review/  
 │   │   │   └── 📄 page.tsx      # Step 9: Review & finalize format  
-│   │   ├── 📁 10-autogenerate-timetable/  
+│   │   ├── 📁 10-generate-timetable/  
 │   │   │   └── 📄 page.tsx      # Step 10: Auto-generate timetable  
 │   │   ├── 📁 11-hod-edit-timetable/  
 │   │   │   └── 📄 page.tsx      # Step 11: HOD edits timetable  

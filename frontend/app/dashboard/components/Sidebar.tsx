@@ -34,7 +34,7 @@ const stepPaths = [
   '7-finalize-subjects',
   '8-create-timetable',
   '9-format-review',
-  '10-autogenerate-timetable',
+  '10-generate-timetable',
   '11-hod-edit-timetable',
   '12-finalize-timetable',
 ];
@@ -55,11 +55,11 @@ const Sidebar = ({ currentStep, onStepClick }: SidebarProps) => {
   };
 
   return (
-    <div className="w-[280px] flex-shrink-0 h-full bg-sidebar text-[var(--sidebar-foreground)] overflow-y-auto pb-6 border-r-[1px] border-[var(--sidebar-border)]">
+    <div className="flex-shrink-0 bg-sidebar pb-6 border-[var(--sidebar-border)] border-r-[1px] w-[280px] h-full overflow-y-auto text-[var(--sidebar-foreground)]">
       <div className="p-4">
         {/* Header */}
         <div className="flex items-center mb-10 px-2">
-          <div className="h-6 w-full rounded-sm flex items-center justify-center text-[var(--sidebar-foreground)] font-bold text-sm">
+          <div className="flex justify-center items-center rounded-sm w-full h-6 font-bold text-[var(--sidebar-foreground)] text-sm">
             Dashboard
           </div>
         </div>
@@ -67,16 +67,16 @@ const Sidebar = ({ currentStep, onStepClick }: SidebarProps) => {
         {/* Year Display */}
         {selectedYear && (
           <div className="mb-4 px-2">
-            <div className="text-sm font-medium text-muted-foreground">Academic Year</div>
-            <div className="text-lg font-bold">{selectedYear}</div>
+            <div className="font-medium text-muted-foreground text-sm">Academic Year</div>
+            <div className="font-bold text-lg">{selectedYear}</div>
           </div>
         )}
 
         {/* Selected Batch Display */}
         {selectedBatch && (
           <div className="mb-4 px-2">
-            <div className="text-sm font-medium text-muted-foreground">Selected Batch</div>
-            <div className="text-sm font-medium  bg-blue-50 p-2 rounded border border-blue-200">
+            <div className="font-medium text-muted-foreground text-sm">Selected Batch</div>
+            <div className="bg-blue-50 p-2 border border-blue-200 rounded font-medium text-sm">
               {selectedBatch.section} ({selectedBatch.noOfStudent} students)
             </div>
           </div>
@@ -85,7 +85,7 @@ const Sidebar = ({ currentStep, onStepClick }: SidebarProps) => {
         {/* Create Year & Batch - Step 1 */}
         <div className="my-6">
           <Link href="/dashboard/timetable-coordinators/1-create-year" passHref>
-            <div className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-[var(--sidebar-accent)] group bg-[var(--sidebar-accent)]/50 border border-[var(--sidebar-border)]">
+            <div className="group flex items-center bg-[var(--sidebar-accent)]/50 hover:bg-[var(--sidebar-accent)] px-3 py-2 border border-[var(--sidebar-border)] rounded-md text-sm">
               <Calendar size={16} className="mr-2 text-green-500" />
               <span className="flex-1 font-medium">Step 1: Create Year & Batch</span>
             </div>
@@ -110,11 +110,11 @@ const Sidebar = ({ currentStep, onStepClick }: SidebarProps) => {
                   />
                   <Users size={16} className="mr-2 text-blue-400" />
                   <span className="flex-1 text-left">{batch.section}</span>
-                  <span className="text-xs text-muted-foreground">({batch.noOfStudent} students)</span>
+                  <span className="text-muted-foreground text-xs">({batch.noOfStudent} students)</span>
                 </button>
 
                 {/* Batch Selection Button */}
-                <div className="ml-6 mt-1">
+                <div className="mt-1 ml-6">
                   <button
                     onClick={() => handleBatchSelect(batch)}
                     className={`w-full text-left px-2 py-1 text-xs rounded hover:bg-[var(--sidebar-accent)] ${
@@ -129,7 +129,7 @@ const Sidebar = ({ currentStep, onStepClick }: SidebarProps) => {
 
                 {/* Steps under each batch */}
                 {expandedBatches[batch.section] && (
-                  <div className="ml-6 mt-1 space-y-1">
+                  <div className="space-y-1 mt-1 ml-6">
                     {steps.slice(1).map((step, stepIndex) => (
                       <div key={`step-${stepIndex}`} className="mb-1">
                         <Link href={`/dashboard/timetable-coordinators/${stepPaths[stepIndex + 1]}`} passHref>
@@ -150,7 +150,7 @@ const Sidebar = ({ currentStep, onStepClick }: SidebarProps) => {
               </div>
             ))
           ) : (
-            <div className="px-2 py-4 text-sm text-muted-foreground">
+            <div className="px-2 py-4 text-muted-foreground text-sm">
               No batches available. Please create a year and batch first.
             </div>
           )}
@@ -158,7 +158,7 @@ const Sidebar = ({ currentStep, onStepClick }: SidebarProps) => {
 
         {/* Logout */}
         <div className="mt-auto pt-4">
-          <Button className="w-full rounded-md text-sm font-medium">
+          <Button className="rounded-md w-full font-medium text-sm">
             Logout
           </Button>
         </div>

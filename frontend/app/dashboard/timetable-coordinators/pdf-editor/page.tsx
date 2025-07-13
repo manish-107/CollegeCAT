@@ -3,114 +3,56 @@
 import Image from 'next/image';
 import collegelogo from '@/components/icons/collegelogo.png';
 import { useMemo, useState } from 'react';
-
-const formatData = {
-  monday: [1, 1, 1, 1, 3],
-  tuesday: [1, 3, 1, 1],
-  wednesday: [1, 1, 1, 1, 3],
-  thursday: [1, 1, 1, 1, 3],
-  friday: [1, 1, 1, 1, 3],
-  saturday: [1, 1, 1, 1, 1, 1, 1],
-};
-
-const timetable_data = {
-  friday: ['IoT', 'NoSQL', 'C#.NET', 'AWT', 'Project'],
-  monday: ['NoSQL', 'C#.NET', 'AWT', 'CN', 'Lab'],
-  saturday: ['', '', '', '', '', '', ''],
-  thursday: ['C#.NET', 'CN', 'NoSQL', 'Lab', 'Project'],
-  tuesday: ['CN', 'IoT', 'AWT', 'C#.NET', 'Lab'],
-  wednesday: ['AWT', 'Lab', 'CN', 'AWT'],
-};
-
-const allocations = [
-  {
-    allocation_id: 36,
-    faculty_name: 'Prof. Faculty 1',
-    subject_name: 'Computer Networks',
-    subject_code: 'CN2025',
-    subject_type: 'CORE',
-    abbreviation: 'CN',
-    venue: '1402',
-    co_faculty_name: 'Prof. Faculty 17',
-  },
-  {
-    allocation_id: 48,
-    faculty_name: 'Prof. Faculty 2',
-    subject_name: 'Data Structures and Algorithms',
-    subject_code: 'DSA2025',
-    subject_type: 'CORE',
-    abbreviation: 'DSA',
-    venue: '1402',
-    co_faculty_name: 'Prof. Faculty 16',
-  },
-  {
-    allocation_id: 45,
-    faculty_name: 'Prof. Faculty 5',
-    subject_name: 'Machine Learning',
-    subject_code: 'ML2025',
-    subject_type: 'ELECTIVE',
-    abbreviation: 'ML',
-    venue: '1402',
-    co_faculty_name: 'Prof. Faculty 15',
-  },
-  {
-    allocation_id: 39,
-    faculty_name: 'Prof. Faculty 9',
-    subject_name: 'Database Management Systems',
-    subject_code: 'DBMS2025',
-    subject_type: 'CORE',
-    abbreviation: 'DBMS',
-    venue: '1402',
-    co_faculty_name: '',
-  },
-  {
-    allocation_id: 47,
-    faculty_name: 'Prof. Faculty 10',
-    subject_name: 'Operating Systems',
-    subject_code: 'OS2025',
-    subject_type: 'CORE',
-    abbreviation: 'OS',
-    venue: '1402',
-    co_faculty_name: '',
-  },
-  {
-    allocation_id: 49,
-    faculty_name: 'Prof. Faculty 11',
-    subject_name: 'Artificial Intelligence',
-    subject_code: 'AI2025',
-    subject_type: 'CORE',
-    abbreviation: 'AI',
-    venue: '1402',
-    co_faculty_name: '',
-  },
-  {
-    allocation_id: 46,
-    faculty_name: 'Prof. Faculty 12',
-    subject_name: 'Data Mining',
-    subject_code: 'DM2025',
-    subject_type: 'CORE',
-    abbreviation: 'DM',
-    venue: '1402',
-    co_faculty_name: 'Prof. Faculty 17',
-    }
-];
+import { useQuery } from '@tanstack/react-query';
+import {
+  getTimetableByYearAndBatchOptions,
+  getAllocationsByYearOptions,
+  getYearsWithBatchesOptions
+} from '@/app/client/@tanstack/react-query.gen';
+import { useYearBatch } from '@/app/dashboard/context/YearBatchContext';
 
 export default function PdfEditorPage() {
-  const [section, setSection] = useState('II Semester A Section');
-  const [semester, setSemester] = useState('(Even Semester 2024-25)');
-  const [wef, setWef] = useState('w.e.f. 28-04-2025');
-  const [hod, setHod] = useState('HOD-MCA');
-  const [principal, setPrincipal] = useState('Principal');
+  const { selectedYear, selectedBatch } = useYearBatch();
+
+  const { data: yearsData } = useQuery(getYearsWithBatchesOptions());
+  const selectedYearData = yearsData?.items?.find(item => item.academic_year === selectedYear);
+  const yearId = selectedYearData?.year_id;
+
+  const { data: timetableData, isLoading: timetableLoading, error } = useQuery({
+    ...getTimetableByYearAndBatchOptions({
+      path: { year_id: yearId!, batch_id: selectedBatch?.batch_id! },
+    }),
+    enabled: !!yearId && !!selectedBatch?.batch_id,
+  });
+
+  const { data: allocationsData } = useQuery({
+    ...getAllocationsByYearOptions({ path: { year_id: yearId! } }),
+    enabled: !!yearId,
+  });
+
+  const timetable = timetableData?.timetable_data || {};
+  const formatData = timetableData?.format_details?.format_data || {};
+  const allAllocations = allocationsData?.allocations || [];
+
+  const filteredAllocations = selectedBatch
+    ? allAllocations.filter(a => a.batch_section === selectedBatch.section)
+    : allAllocations;
 
   const uniqueSubjects = useMemo(() => {
     const seen = new Set();
-    return allocations.filter((sub) => {
+    return filteredAllocations.filter((sub) => {
       const key = `${sub.subject_code}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
     });
-  }, []);
+  }, [filteredAllocations]);
+
+  const [section, setSection] = useState('II Semester A Section');
+  const [semester, setSemester] = useState('(Even Semester 2024-25)');
+  const [wef, setWef] = useState('w.e.f. 28-04-2025');
+  const [hod, setHod] = useState('HOD-MCA');
+  const [principal, setPrincipal] = useState('Principal');
 
   return (
     <div className="bg-white shadow-lg mx-auto p-8 max-w-7xl">
@@ -118,12 +60,12 @@ export default function PdfEditorPage() {
         <Image src={collegelogo} alt="College Logo" width={100} height={100} />
         <div className="flex-1 text-center">
           <h1 className="mb-1 font-extrabold text-black text-2xl tracking-wide">ST JOSEPH ENGINEERING COLLEGE, MANGALURU</h1>
-          <div className="mb-1 font-extrabold text-black text-black text-2xl">An Autonomous Institution</div>
+          <div className="mb-1 font-extrabold text-black text-2xl">An Autonomous Institution</div>
           <div className="font-bold text-black text-lg">DEPARTMENT OF COMPUTER APPLICATIONS</div> 
         </div>
         <div style={{ width: 100 }} />
       </div>
-          <div className="mt-5 mb-2 border-1 border-t border-black" />
+      <div className="mt-5 mb-2 border-1 border-t border-black" />
 
       <div className="flex justify-between items-center mt-4">
         <div>
@@ -160,7 +102,7 @@ export default function PdfEditorPage() {
                   const cells = [];
                   let slotIndex = 0;
                   let count = 0;
-                  const daySubjects = timetable_data[day as keyof typeof timetable_data] || [];
+                  const daySubjects = timetable[day] || [];
                   let subjectIndex = 0;
 
                   while (slotIndex < periods.length) {
@@ -225,7 +167,7 @@ export default function PdfEditorPage() {
                 <td className="px-2 py-1 border">{item.subject_code}</td>
                 <td className="px-2 py-1 border text-left">{item.subject_name}</td>
                 <td className="px-2 py-1 border">{item.faculty_name}</td>
-                <td className="px-2 py-1 border">{item.co_faculty_name}</td>
+                <td className="px-2 py-1 border">{item.co_faculty_id}</td>
                 <td className="px-2 py-1 border whitespace-pre-wrap">{item.venue || '–'}</td>
               </tr>
             ))}
