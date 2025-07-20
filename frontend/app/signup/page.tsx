@@ -91,7 +91,7 @@ const RegistrationForm = () => {
             </SelectTrigger>
             <SelectContent className="dark:bg-black dark:border-neutral-800">
               <SelectItem value="TIMETABLE_COORDINATOR">Timetable Coordinator</SelectItem>
-              <SelectItem value="LECTURER">Lecturer</SelectItem>
+              <SelectItem value="FACULTY">Faculty</SelectItem>
               <SelectItem value="HOD">HOD</SelectItem>
             </SelectContent>
           </Select>

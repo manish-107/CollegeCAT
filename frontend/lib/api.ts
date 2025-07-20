@@ -8,3 +8,13 @@ const api = axios.create({
 });
 
 export default api; 
+
+
+export const getCurrentUserOptions = () => ({
+  queryKey: ['currentUser'],
+  queryFn: async () => {
+    const res = await axios.get('http://localhost:3000/api/users/me', { withCredentials: true });
+    // FastAPI response: session cookie will be sent if present
+    return res.data;
+  },
+});

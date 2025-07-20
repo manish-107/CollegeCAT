@@ -4,6 +4,11 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { ModeToggle } from "@/components/custom/ModeToggle";
 import "./globals.css";
 import { Toaster } from "sonner";
+import QueryProvider from "./providers/QueryProvider";
+import { UserProvider } from "./dashboard/context/UserContext";
+import { YearBatchProvider } from "./dashboard/context/YearBatchContext";
+
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,13 +41,19 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {/* Global dark/light toggle */}
-          <div className="top-3 right-4 z-50 fixed">
-            <ModeToggle />
-          </div>
-          {/* Page content */}
-          <main>{children}</main>
-          <Toaster />
+          <QueryProvider>
+            <UserProvider>
+              <YearBatchProvider>
+                {/* Global dark/light toggle */}
+                <div className="top-3 right-4 z-50 fixed">
+                  <ModeToggle />
+                </div>
+                {/* Page content */}
+                <main>{children}</main>
+                <Toaster />
+              </YearBatchProvider>
+            </UserProvider>
+          </QueryProvider>
         </ThemeProvider>
       </body>
     </html>

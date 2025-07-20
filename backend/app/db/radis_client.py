@@ -9,3 +9,4 @@ redis_client = redis.Redis(
     username="default",
     password=REDIS_PASSWORD,
 )
+

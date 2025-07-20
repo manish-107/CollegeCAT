@@ -54,6 +54,21 @@ const Sidebar = ({ currentStep, onStepClick }: SidebarProps) => {
     setSelectedBatch(batch);
   };
 
+  const handleBatchClick = (batch: any) => {
+    // Automatically select the batch when clicked
+    setSelectedBatch(batch);
+    // Also toggle the expansion
+    toggleBatch(batch.section);
+  };
+
+  // New function to handle step click and batch selection
+  const handleStepClick = (batch: any, stepIndex: number) => {
+    // Set the selected batch for this step
+    setSelectedBatch(batch);
+    // Call the parent step click handler
+    onStepClick(stepIndex);
+  };
+
   return (
     <div className="flex-shrink-0 bg-sidebar pb-6 border-[var(--sidebar-border)] border-r-[1px] w-[280px] h-full overflow-y-auto text-[var(--sidebar-foreground)]">
       <div className="p-4">
@@ -85,7 +100,12 @@ const Sidebar = ({ currentStep, onStepClick }: SidebarProps) => {
         {/* Create Year & Batch - Step 1 */}
         <div className="my-6">
           <Link href="/dashboard/timetable-coordinators/1-create-year" passHref>
-            <div className="group flex items-center bg-[var(--sidebar-accent)]/50 hover:bg-[var(--sidebar-accent)] px-3 py-2 border border-[var(--sidebar-border)] rounded-md text-sm">
+            <div
+              onClick={() => onStepClick(1)}
+              className={`group flex items-center bg-[var(--sidebar-accent)]/50 hover:bg-[var(--sidebar-accent)] px-3 py-2 border border-[var(--sidebar-border)] rounded-md text-sm cursor-pointer ${
+                currentStep === 1 ? 'bg-[var(--sidebar-accent)] font-semibold' : ''
+              }`}
+            >
               <Calendar size={16} className="mr-2 text-green-500" />
               <span className="flex-1 font-medium">Step 1: Create Year & Batch</span>
             </div>
@@ -97,10 +117,10 @@ const Sidebar = ({ currentStep, onStepClick }: SidebarProps) => {
           {batches && batches.length > 0 ? (
             batches.map((batch) => (
               <div key={batch.batch_id} className="mb-1">
-                {/* Batch Header */}
+                {/* Batch Header - Click to select and expand */}
                 <button
-                  onClick={() => toggleBatch(batch.section)}
-                  className={`flex items-center w-full px-2 py-1.5 text-sm rounded-md hover:bg-[var(--sidebar-accent)] group ${
+                  onClick={() => handleBatchClick(batch)}
+                  className={`flex items-center w-full px-2 py-1.5 text-sm rounded-md hover:bg-[var(--sidebar-accent)] group transition-colors ${
                     selectedBatch?.batch_id === batch.batch_id ? 'bg-blue-100 border border-blue-300' : ''
                   }`}
                 >
@@ -131,12 +151,14 @@ const Sidebar = ({ currentStep, onStepClick }: SidebarProps) => {
                 {expandedBatches[batch.section] && (
                   <div className="space-y-1 mt-1 ml-6">
                     {steps.slice(1).map((step, stepIndex) => (
-                      <div key={`step-${stepIndex}`} className="mb-1">
+                      <div key={`${batch.batch_id}-step-${stepIndex}`} className="mb-1">
                         <Link href={`/dashboard/timetable-coordinators/${stepPaths[stepIndex + 1]}`} passHref>
                           <div
-                            onClick={() => onStepClick(stepIndex + 2)} // +2 because step 1 is separate
-                            className={`flex items-center px-2 py-1.5 text-sm rounded-md hover:bg-[var(--sidebar-accent)] group ${
-                              currentStep === stepIndex + 2 ? 'bg-[var(--sidebar-accent)] font-semibold' : ''
+                            onClick={() => handleStepClick(batch, stepIndex + 2)} // +2 because step 1 is separate
+                            className={`flex items-center px-2 py-1.5 text-sm rounded-md hover:bg-[var(--sidebar-accent)] group cursor-pointer ${
+                              currentStep === stepIndex + 2 && selectedBatch?.batch_id === batch.batch_id 
+                                ? 'bg-[var(--sidebar-accent)] font-semibold' 
+                                : ''
                             }`}
                           >
                             <Lock size={16} className="mr-2 text-blue-400" />

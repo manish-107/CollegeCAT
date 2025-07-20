@@ -28,8 +28,11 @@ async def submit_priorities(
     service: FacultyPriorityService = Depends(get_service)
 ):
     """Submit faculty subject priorities for a year"""
-    await service.submit_priorities(data.faculty_id, data.year_id, [p.dict() for p in data.priorities])
-    return SuccessResponse(message="Priorities submitted successfully",data=FacultyPrioritySubmitRequest.faculty_id)
+    try:
+        await service.submit_priorities(data.faculty_id, data.year_id, [p.dict() for p in data.priorities])
+        return SuccessResponse(message="Priorities submitted successfully")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @subject_priority_router.put("/update/{faculty_id}/{year_id}", response_model=SuccessResponse, operation_id="update_faculty_priorities")

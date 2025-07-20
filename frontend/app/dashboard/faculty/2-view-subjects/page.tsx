@@ -1,86 +1,156 @@
-"use client";
+'use client';
 
-import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useRef } from 'react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
+
 import { useYearBatch } from '@/app/dashboard/context/YearBatchContext';
 import { useQuery } from '@tanstack/react-query';
-import { getYearsWithBatchesOptions, getPrioritiesByFacultyAndYearOptions } from '@/app/client/@tanstack/react-query.gen';
-
-const getTypeColor = (type: string): string => {
+import {
+  getAllocationsByYearOptions,
+  getYearsWithBatchesOptions
+} from '@/app/client/@tanstack/react-query.gen';
+import type { FacultySubjectAllocationResponse } from '@/app/client/types.gen';
+import { toast } from 'sonner';
+const getTypeColor = (type: string) => {
   switch (type) {
-    case "CORE":
-      return "bg-blue-100 text-blue-800";
-    case "ELECTIVE":
-      return "bg-green-100 text-green-800";
-    case "LAB":
-      return "bg-purple-100 text-purple-800";
-    case "PROJECT":
-      return "bg-orange-100 text-orange-800";
-    default:
-      return "bg-gray-100 text-gray-800";
+    case 'CORE': return 'bg-blue-100 text-blue-800';
+    case 'ELECTIVE': return 'bg-green-100 text-green-800';
+    case 'LAB': return 'bg-purple-100 text-purple-800';
+    default: return 'bg-gray-100 text-gray-800';
   }
 };
 
-const getTypeLabel = (type: string): string => {
+const getTypeLabel = (type: string) => {
   switch (type) {
-    case "CORE":
-      return "Core";
-    case "ELECTIVE":
-      return "Elective";
-    case "LAB":
-      return "Lab";
-    case "PROJECT":
-      return "Project";
-    default:
-      return "Unknown";
+    case 'CORE': return 'Core';
+    case 'ELECTIVE': return 'Elective';
+    case 'LAB': return 'Lab';
+    default: return 'Unknown';
   }
 };
 
-export default function FacultyViewSubjectsPage() {
-  const { selectedYear } = useYearBatch();
-  // Get year_id from context
+export default function FinalizeSubjectsPage() {
+  const { selectedYear, selectedBatch } = useYearBatch();
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // Fetch academic years to get year_id
   const { data: yearsData } = useQuery(getYearsWithBatchesOptions());
   const selectedYearData = yearsData?.items?.find(item => item.academic_year === selectedYear);
   const yearId = selectedYearData?.year_id;
 
-  // Fetch priorities for faculty_id 1 and this year
-  const { data, isLoading, error } = useQuery({
-    ...getPrioritiesByFacultyAndYearOptions({ path: { faculty_id: 1, year_id: yearId! } }),
+  // Fetch allocations for the selected year
+  const {
+    data: allocationsData,
+    isLoading,
+    error: fetchError
+  } = useQuery({
+    ...getAllocationsByYearOptions({ path: { year_id: yearId! } }),
     enabled: !!yearId
   });
 
-  // Flatten all batches' subjects into a single array
-  const priorities = data?.batches?.flatMap(batch => batch.subjects) || [];
+  const allocations = allocationsData?.allocations || [];
+
+  // Filter allocations by selected batch
+  const filteredAllocations = selectedBatch
+    ? allocations.filter(allocation => allocation.batch_section === selectedBatch.section)
+    : allocations;
+
+  // Remove duplicates based on subject_id and batch_id combination
+  const uniqueAllocations = filteredAllocations.filter((allocation, index, self) =>
+    index === self.findIndex(a =>
+      a.subject_id === allocation.subject_id && a.batch_id === allocation.batch_id
+    )
+  );
+
+  const handleDownloadPDF = () => {
+    console.log("handleDownloadPDF")
+    toast.success("Download pdf")
+  };
+
+
+  if (isLoading) {
+    return (
+      <div className="space-y-8 mx-auto p-6 max-w-5xl">
+        <div className="flex justify-center items-center py-8">
+          <div className="flex items-center gap-2">
+            <Loader2 className="w-6 h-6 animate-spin" />
+            <span>Loading allocations...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="space-y-8 mx-auto p-6 max-w-5xl">
+        <div className="py-8 text-center">
+          <div className="text-red-700">
+            <strong>Error:</strong> Failed to fetch allocations. Please try again.
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-8">
-      <h2 className="text-2xl font-bold mb-6 text-center">
-        {isLoading ? "Loading..." : priorities.length > 0 ? "Assigned Subjects" : "No Subjects Assigned"}
-      </h2>
-      {error && <div className="text-center text-red-500">Failed to load subjects.</div>}
-      <div className="grid grid-cols-2 gap-4">
-        {priorities.map((subject) => (
-          <div key={subject.subject_id}>
-            <span className="inline-block mb-2 px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-semibold">Assigned</span>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between gap-2">
-                <CardTitle className="text-lg flex flex-col">
-                  <span>{subject.subject_name}</span>
-                </CardTitle>
-                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getTypeColor(subject.subject_type)}`}>
-                  {getTypeLabel(subject.subject_type)}
-                </span>
-              </CardHeader>
-              <CardContent>
-                <span className="px-2 py-1 rounded-full text-xs font-mono bg-gray-100 text-gray-700 border border-gray-200">
-                  {subject.subject_code}
-                </span>
-                <span className="ml-4 text-xs text-muted-foreground">Priority: {subject.priority}</span>
-              </CardContent>
-            </Card>
+    <div className="space-y-8 mx-auto p-6 max-w-5xl">
+      <h2 className="mb-6 font-bold text-2xl text-center">Finalize Subject Allocation</h2>
+
+
+
+      <Card className="shadow-sm hover:shadow-lg border-2 border-primary/30 transition-all">
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-lg">
+              {selectedBatch ? `${selectedBatch.section}` : 'All Batches'} <span className="font-normal text-muted-foreground">({selectedYear})</span>
+            </CardTitle>
+            <Button onClick={handleDownloadPDF} size="sm" disabled={uniqueAllocations.length === 0}>
+              Download PDF
+            </Button>
           </div>
-        ))}
-      </div>
+        </CardHeader>
+        <CardContent ref={cardRef}>
+          {uniqueAllocations.length === 0 ? (
+            <p className="text-muted-foreground text-sm">
+              {selectedBatch
+                ? `No subjects allocated for batch ${selectedBatch.section} yet.`
+                : 'No subjects allocated yet.'
+              }
+            </p>
+          ) : (
+            <div className="gap-2 grid grid-cols-2">
+              {uniqueAllocations.map((allocation) => (
+                <div
+                  key={allocation.allocation_id}
+                  className="flex flex-col gap-2 bg-muted/50 p-4 border rounded-lg"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="bg-gray-100 px-2 py-1 border border-gray-200 rounded-full font-mono text-gray-700 text-xs">
+                      {allocation.subject_code}
+                    </span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(allocation.subject_type)}`}>
+                      {getTypeLabel(allocation.subject_type)}
+                    </span>
+                  </div>
+                  <div className="font-semibold text-base">{allocation.subject_name}</div>
+                  <div className="text-muted-foreground text-sm">
+                    <span className="font-medium">Lecturer:</span> {allocation.faculty_name}
+                  </div>
+                  <div className="text-muted-foreground text-xs">
+                    <span className="font-medium">Email:</span> {allocation.faculty_email}
+                  </div>
+                  <div className="text-muted-foreground text-xs">
+                    <span className="font-medium">Priority:</span> {allocation.allocated_priority}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

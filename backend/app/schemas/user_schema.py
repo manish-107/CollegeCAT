@@ -60,9 +60,9 @@ class UserBase(BaseModel):
 
 
 class signupData(BaseModel):
-    uname: str = uname_field_doc(default=None)
-    role: RoleEnum = role_field_doc(default=None)
-    joining_year: int = joining_year_field_doc(default=None)
+    uname: str = uname_field_doc()
+    role: RoleEnum = role_field_doc()
+    joining_year: int = joining_year_field_doc()
     
 class UpdateUserData(UserBase):
     

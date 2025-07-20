@@ -10,7 +10,7 @@ from starlette.exceptions import HTTPException
 from typing import List
 from app.schemas.lecturer_priority_schema import SuccessResponse    
 
-user_router = APIRouter(dependencies=[Depends(mock_auth_dependency)])
+user_router = APIRouter(dependencies=[Depends(auth_dependency)])
 # user_router = APIRouter()
 
 # dependencies=[Depends(auth_dependency)]

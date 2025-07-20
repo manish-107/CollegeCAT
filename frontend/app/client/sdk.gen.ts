@@ -61,6 +61,7 @@ export const getCurrentUser = <ThrowOnError extends boolean = false>(options?: O
     return (options?.client ?? _heyApiClient).get<GetCurrentUserResponses, unknown, ThrowOnError>({
         responseType: 'json',
         url: '/api/users/me',
+        withCredentials:true,
         ...options
     });
 };

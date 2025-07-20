@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Card,
   CardHeader,
@@ -13,44 +13,29 @@ import { Pencil, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useYearBatch } from '@/app/dashboard/context/YearBatchContext';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   getAllocationsByYearOptions,
   getYearsWithBatchesOptions,
-  updateAllocationsMutation
+  updateAllocationsMutation,
+  getAllUsersOptions
 } from '@/app/client/@tanstack/react-query.gen';
 import type { FacultySubjectAllocationResponse } from '@/app/client/types.gen';
 import { toast } from 'sonner';
-
-// Subject and assignment data types
-interface Subject {
-  allocation_id: number;
-  subject_code: string;
-  subject_name: string;
-  faculty_name: string;
-  subject_type: string;
-  status: 'pending' | 'approved' | 'modified';
-  abbreviation: string;
-  faculty_id: number;
-  subject_id: number;
-  batch_id: number;
-  batch_section: string;
-  year_id: number;
-  academic_year: string;
-  allocated_priority: number;
-}
 
 const subjectTypes = [
   { value: 'CORE', label: 'Core Subject' },
   { value: 'ELECTIVE', label: 'Elective Subject' },
   { value: 'LAB', label: 'Laboratory' },
+  { value: 'PROJECT', label: 'Project' },
 ];
 
 const getTypeColor = (type: string) => {
   switch (type) {
-    case 'CORE': return 'bg-blue-100 text-blue-800';
-    case 'ELECTIVE': return 'bg-green-100 text-green-800';
-    case 'LAB': return 'bg-purple-100 text-purple-800';
+    case 'CORE': return 'bg-blue-200 border border-blue-400 text-blue-900';
+    case 'ELECTIVE': return 'bg-green-200 border border-green-400 text-green-900';
+    case 'LAB': return 'bg-purple-200 border border-purple-400 text-purple-900';
+    case 'PROJECT': return 'bg-orange-200 border border-orange-400 text-orange-900';
     default: return 'bg-gray-100 text-gray-800';
   }
 };
@@ -60,11 +45,12 @@ const getTypeLabel = (type: string) => {
     case 'CORE': return 'Core';
     case 'ELECTIVE': return 'Elective';
     case 'LAB': return 'Lab';
+    case 'PROJECT': return 'Project';
     default: return 'Unknown';
   }
 };
 
-const getStatusColor = (status: Subject['status']) => {
+const getStatusColor = (status: string) => {
   switch (status) {
     case 'approved': return 'bg-green-100 text-green-800';
     case 'pending': return 'bg-yellow-100 text-yellow-800';
@@ -73,7 +59,7 @@ const getStatusColor = (status: Subject['status']) => {
   }
 };
 
-const getStatusLabel = (status: Subject['status']) => {
+const getStatusLabel = (status: string) => {
   switch (status) {
     case 'approved': return 'Approved';
     case 'pending': return 'Pending';
@@ -84,13 +70,20 @@ const getStatusLabel = (status: Subject['status']) => {
 
 export default function HODApproveModifyPage() {
   const { selectedYear, selectedBatch } = useYearBatch();
+  const [allocations, setAllocations] = useState<FacultySubjectAllocationResponse[]>([]);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState<Subject | null>(null);
+  const [editForm, setEditForm] = useState<FacultySubjectAllocationResponse | null>(null);
+
+  const queryClient = useQueryClient();
 
   // Fetch academic years to get year_id
   const { data: yearsData } = useQuery(getYearsWithBatchesOptions());
   const selectedYearData = yearsData?.items?.find(item => item.academic_year === selectedYear);
   const yearId = selectedYearData?.year_id;
+
+  // Fetch users for faculty selection
+  const { data: usersData, isLoading: isUsersLoading } = useQuery(getAllUsersOptions());
+  const facultyUsers = usersData?.filter(u => u.role === 'FACULTY') || [];
 
   // Fetch allocations for the selected year
   const { 
@@ -105,32 +98,24 @@ export default function HODApproveModifyPage() {
   // Update allocations mutation
   const updateAllocationMutation = useMutation(updateAllocationsMutation());
 
-  // Convert API data to local format and filter by selected batch
-  const subjects: Subject[] = allocationsData?.allocations
-    ?.filter(allocation => !selectedBatch || allocation.batch_section === selectedBatch.section)
-    ?.map(allocation => ({
-      allocation_id: allocation.allocation_id,
-      subject_code: allocation.subject_code,
-      subject_name: allocation.subject_name,
-      faculty_name: allocation.faculty_name,
-      subject_type: allocation.subject_type,
-      status: 'pending' as Subject['status'], // Default status, you might want to add this to the API
-      abbreviation: allocation.abbreviation,
-      faculty_id: allocation.faculty_id,
-      subject_id: allocation.subject_id,
-      batch_id: allocation.batch_id,
-      batch_section: allocation.batch_section,
-      year_id: allocation.year_id,
-      academic_year: allocation.academic_year,
-      allocated_priority: allocation.allocated_priority,
-    })) || [];
+  // Update local state when data is fetched
+  useEffect(() => {
+    if (allocationsData?.allocations) {
+      setAllocations(allocationsData.allocations);
+    }
+  }, [allocationsData]);
+
+  // Filter allocations by selected batch
+  const filteredAllocations = selectedBatch
+    ? allocations.filter(a => a.batch_section === selectedBatch.section)
+    : allocations;
 
   const handleEdit = (idx: number) => {
     setEditingIdx(idx);
-    setEditForm(subjects[idx]);
+    setEditForm(filteredAllocations[idx]);
   };
 
-  const handleEditChange = (field: keyof Subject, value: string) => {
+  const handleEditChange = (field: keyof FacultySubjectAllocationResponse, value: any) => {
     if (!editForm) return;
     setEditForm({ ...editForm, [field]: value });
   };
@@ -138,27 +123,24 @@ export default function HODApproveModifyPage() {
   const handleEditSave = async () => {
     if (editingIdx !== null && editForm) {
       try {
-        // Update the allocation via API
         await updateAllocationMutation.mutateAsync({
           body: {
             allocation_id: editForm.allocation_id,
             faculty_id: editForm.faculty_id,
-            subject_id: editForm.subject_id,
-            batch_id: editForm.batch_id,
-            year_id: editForm.year_id,
-            allocated_priority: editForm.allocated_priority,
-          }
+            co_faculty_id: editForm.co_faculty_id,
+            venue: editForm.venue
+          },
         });
 
-        // Update local state
-      const updated = [...subjects];
-      updated[editingIdx] = { ...editForm, status: 'modified' as Subject['status'] };
-        
-      setEditingIdx(null);
-      setEditForm(null);
         toast.success('Allocation updated successfully');
-      } catch (error) {
-        console.error('Error updating allocation:', error);
+        await queryClient.invalidateQueries({
+          queryKey: getAllocationsByYearOptions({ path: { year_id: yearId! } }).queryKey,
+        });
+
+        setEditingIdx(null);
+        setEditForm(null);
+      } catch (err) {
+        console.error('Failed to update allocation:', err);
         toast.error('Failed to update allocation');
       }
     }
@@ -169,80 +151,41 @@ export default function HODApproveModifyPage() {
     setEditForm(null);
   };
 
-  const handleApprove = async (idx: number) => {
-    const subject = subjects[idx];
-    try {
-      // Update the allocation via API
-      await updateAllocationMutation.mutateAsync({
-        body: {
-          allocation_id: subject.allocation_id,
-          faculty_id: subject.faculty_id,
-          subject_id: subject.subject_id,
-          batch_id: subject.batch_id,
-          year_id: subject.year_id,
-          allocated_priority: subject.allocated_priority,
-        }
-      });
 
-      toast.success('Allocation approved successfully');
-    } catch (error) {
-      console.error('Error approving allocation:', error);
-      toast.error('Failed to approve allocation');
-    }
-  };
 
-  const handleReject = async (idx: number) => {
-    const subject = subjects[idx];
-    try {
-      // You might want to implement a reject API call here
-      // For now, we'll just show a toast
-      toast.success('Allocation rejected');
-    } catch (error) {
-      console.error('Error rejecting allocation:', error);
-      toast.error('Failed to reject allocation');
-    }
-  };
 
   const handleApproveAll = async () => {
     try {
-      // Approve all allocations for the current batch
-      const promises = subjects.map(subject => 
+      const promises = filteredAllocations.map(allocation => 
         updateAllocationMutation.mutateAsync({
           body: {
-            allocation_id: subject.allocation_id,
-            faculty_id: subject.faculty_id,
-            subject_id: subject.subject_id,
-            batch_id: subject.batch_id,
-            year_id: subject.year_id,
-            allocated_priority: subject.allocated_priority,
+            allocation_id: allocation.allocation_id,
+            faculty_id: allocation.faculty_id,
+            co_faculty_id: allocation.co_faculty_id,
+            venue: allocation.venue
           }
         })
       );
 
       await Promise.all(promises);
       toast.success('All allocations approved successfully');
+      await queryClient.invalidateQueries({
+        queryKey: getAllocationsByYearOptions({ path: { year_id: yearId! } }).queryKey,
+      });
     } catch (error) {
       console.error('Error approving all allocations:', error);
       toast.error('Failed to approve all allocations');
     }
   };
 
-  const handleRejectAll = async () => {
-    try {
-      // You might want to implement a reject all API call here
-      toast.success('All allocations rejected');
-    } catch (error) {
-      console.error('Error rejecting all allocations:', error);
-      toast.error('Failed to reject all allocations');
-    }
-  };
+
 
   if (!yearId || !selectedBatch?.batch_id) {
     return (
-      <div className="p-6 max-w-5xl mx-auto space-y-8">
+      <div className="space-y-8 mx-auto p-6 max-w-5xl">
         <Card>
           <CardContent className="pt-6">
-            <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-4 rounded-lg border border-amber-200">
+            <div className="flex items-center gap-2 bg-amber-50 p-4 border border-amber-200 rounded-lg text-amber-600">
               <span>Please select an academic year and batch to view allocations.</span>
             </div>
           </CardContent>
@@ -253,11 +196,11 @@ export default function HODApproveModifyPage() {
 
   if (isLoading) {
     return (
-      <div className="p-6 max-w-5xl mx-auto space-y-8">
+      <div className="space-y-8 mx-auto p-6 max-w-5xl">
         <Card>
           <CardContent className="pt-6">
-            <div className="flex items-center justify-center gap-2">
-              <Loader2 className="h-6 w-6 animate-spin" />
+            <div className="flex justify-center items-center gap-2">
+              <Loader2 className="w-6 h-6 animate-spin" />
               <span>Loading allocations...</span>
             </div>
           </CardContent>
@@ -268,10 +211,10 @@ export default function HODApproveModifyPage() {
 
   if (fetchError) {
     return (
-      <div className="p-6 max-w-5xl mx-auto space-y-8">
+      <div className="space-y-8 mx-auto p-6 max-w-5xl">
         <Card>
           <CardContent className="pt-6">
-            <div className="flex items-center gap-2 text-red-600 bg-red-50 p-4 rounded-lg border border-red-200">
+            <div className="flex items-center gap-2 bg-red-50 p-4 border border-red-200 rounded-lg text-red-600">
               <span>Error loading allocations. Please try again.</span>
             </div>
           </CardContent>
@@ -281,8 +224,8 @@ export default function HODApproveModifyPage() {
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-8">
-      <h2 className="text-2xl font-bold mb-6 text-center">Approve or Modify Assignments</h2>
+    <div className="space-y-8 mx-auto p-6 max-w-7xl">
+      <h2 className="mb-6 font-bold text-2xl text-center">Approve or Modify Assignments</h2>
       <Card>
         <CardHeader>
           <CardTitle className="text-xl">
@@ -290,51 +233,55 @@ export default function HODApproveModifyPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {subjects.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+          {filteredAllocations.length === 0 ? (
+            <div className="py-8 text-muted-foreground text-center">
               No allocations found for the selected year and batch.
             </div>
           ) : (
             <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {subjects.map((subject, idx) => (
-              <div
-                key={idx}
-                className="border-2 border-primary/30 rounded-lg p-4 bg-muted/50 shadow-sm hover:shadow-lg transition-all flex flex-col gap-2 relative"
-              >
-                <button
-                  className="absolute top-2 right-2 text-primary hover:text-primary/80 z-10"
-                  onClick={() => handleEdit(idx)}
-                >
-                  <Pencil className="w-4 h-4" />
-                </button>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-mono text-xs px-2 py-1 rounded-full bg-gray-100 border border-gray-200 text-gray-700">
-                        {subject.subject_code}
+              <div className="gap-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
+                {filteredAllocations.map((allocation, idx) => (
+                  <div
+                    key={allocation.allocation_id}
+                    className="relative flex flex-col gap-2 bg-muted/50 shadow-sm hover:shadow-lg p-4 border-2 border-primary/30 rounded-lg transition-all"
+                  >
+                    <button
+                      className="top-2 right-2 z-10 absolute text-primary hover:text-primary/80"
+                      onClick={() => handleEdit(idx)}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="bg-gray-100 px-2 py-1 border border-gray-200 rounded font-mono text-white dark:text-black text-xs">
+                        {allocation.subject_code}
                       </span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(subject.subject_type)}`}>
-                        {getTypeLabel(subject.subject_type)}
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${getTypeColor(allocation.subject_type)}`}>
+                        {getTypeLabel(allocation.subject_type)}
                       </span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(subject.status)}`}>
-                        {getStatusLabel(subject.status)}
-                  </span>
                     </div>
-                    <div className="font-semibold text-base">{subject.subject_name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      <span className="font-medium">Lecturer:</span> {subject.faculty_name}
+                    <div className="font-semibold text-base">{allocation.subject_name}</div>
+                    <div className="text-muted-foreground text-sm">
+                      <span className="font-medium">Faculty:</span> {allocation.faculty_name}
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      <span className="font-medium">Abbreviation:</span> {subject.abbreviation}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                      <span className="font-medium">Priority:</span> {subject.allocated_priority}
-                </div>
+                    {allocation.co_faculty_id && (
+                      <div className="text-muted-foreground text-sm">
+                        <span className="font-medium">Co-Faculty:</span> {allocation.co_faculty_id}
+                      </div>
+                    )}
+                    <div className="text-muted-foreground text-sm">
+                      <span className="font-medium">Venue:</span> {allocation.venue || 'Not assigned'}
+                    </div>
+                    <div className="text-muted-foreground text-sm">
+                      <span className="font-medium">Batch:</span> {allocation.batch_section} ({allocation.batch_noOfStudent} students)
+                    </div>
+                    
+                   
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          {/* Bulk Actions */}
-          <div className="flex justify-center gap-4 mt-8 pt-6 border-t">
+              {/* Bulk Actions */}
+              <div className="flex justify-center gap-4 mt-8 pt-6 border-t">
                 <Button 
                   onClick={handleApproveAll} 
                   className="px-6"
@@ -342,113 +289,118 @@ export default function HODApproveModifyPage() {
                 >
                   {updateAllocationMutation.isPending ? (
                     <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      <Loader2 className="mr-2 w-4 h-4 animate-spin" />
                       Approving...
                     </>
                   ) : (
                     'Approve All'
                   )}
-            </Button>
-                <Button 
-                  onClick={handleRejectAll} 
-                  variant="outline" 
-                  className="px-6"
-                >
-              Reject All
-            </Button>
-          </div>
+                </Button>
+               
+              </div>
             </>
           )}
 
-          {/* Edit Subject Modal */}
+          {/* Edit Modal - Updated with proper form fields */}
           {editingIdx !== null && editForm && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <Card className="w-full max-w-md mx-4">
+            <div className="z-50 fixed inset-0 flex justify-center items-center bg-black bg-opacity-50">
+              <Card className="mx-4 w-full max-w-md">
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">Modify Assignment</CardTitle>
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-lg">Edit Allocation</CardTitle>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={handleEditCancel}
-                      className="h-8 w-8 p-0"
                     >
-                      <X className="h-4 w-4" />
+                      <X className="w-4 h-4" />
                     </Button>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="edit-subject-name">Subject Name</Label>
-                    <Input
-                      id="edit-subject-name"
-                      placeholder="Enter subject name"
-                      value={editForm.subject_name}
-                      onChange={(e) => handleEditChange('subject_name', e.target.value)}
-                    />
+                    <Label>Subject Name</Label>
+                    <Input value={editForm.subject_name} disabled />
                   </div>
+                  
                   <div className="space-y-2">
-                    <Label htmlFor="edit-subject-code">Subject Code</Label>
-                    <Input
-                      id="edit-subject-code"
-                      placeholder="e.g., CS101, MATH201"
-                      value={editForm.subject_code}
-                      onChange={(e) => handleEditChange('subject_code', e.target.value)}
-                    />
+                    <Label>Subject Code</Label>
+                    <Input value={editForm.subject_code} disabled />
                   </div>
+                  
                   <div className="space-y-2">
-                    <Label htmlFor="edit-lecturer">Lecturer</Label>
-                    <Input
-                      id="edit-lecturer"
-                      placeholder="Enter lecturer name"
-                      value={editForm.faculty_name}
-                      onChange={(e) => handleEditChange('faculty_name', e.target.value)}
-                    />
+                    <Label>Subject Type</Label>
+                    <Input value={editForm.subject_type} disabled />
                   </div>
+
                   <div className="space-y-2">
-                    <Label htmlFor="edit-subject-type">Subject Type</Label>
+                    <Label>Faculty</Label>
                     <Select
-                      value={editForm.subject_type}
-                      onValueChange={(value: string) => handleEditChange('subject_type', value)}
+                      value={editForm.faculty_id?.toString()}
+                      onValueChange={(val) => handleEditChange('faculty_id', Number(val))}
+                      disabled={isUsersLoading}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select type" />
+                        <SelectValue placeholder="Select a faculty member" />
                       </SelectTrigger>
                       <SelectContent>
-                        {subjectTypes.map((type) => (
-                          <SelectItem key={type.value} value={type.value}>
-                            {type.label}
+                        {facultyUsers.map(user => (
+                          <SelectItem key={user.user_id} value={user.user_id.toString()}>
+                            {user.uname}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="flex gap-2 pt-4">
-                    <Button
-                      onClick={handleEditSave}
-                      className="flex-1"
-                      disabled={
-                        !editForm.subject_name.trim() ||
-                        !editForm.subject_code.trim() ||
-                        !editForm.faculty_name.trim() ||
-                        !editForm.subject_type ||
-                        updateAllocationMutation.isPending
+
+                  <div className="space-y-2">
+                    <Label>Co-Faculty</Label>
+                    <Select
+                      value={editForm.co_faculty_id?.toString() ?? ''}
+                      onValueChange={(val) =>
+                        handleEditChange('co_faculty_id', val === 'none' ? null : Number(val))
                       }
+                      disabled={isUsersLoading}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a co-faculty (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {facultyUsers.map(user => (
+                          <SelectItem key={user.user_id} value={user.user_id.toString()}>
+                            {user.uname}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Venue</Label>
+                    <Input
+                      placeholder="Enter venue"
+                      value={editForm.venue ?? ''}
+                      onChange={(e) => handleEditChange('venue', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="flex gap-2 pt-4">
+                    <Button 
+                      className="flex-1" 
+                      onClick={handleEditSave}
+                      disabled={updateAllocationMutation.isPending}
                     >
                       {updateAllocationMutation.isPending ? (
                         <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          <Loader2 className="mr-2 w-4 h-4 animate-spin" />
                           Saving...
                         </>
                       ) : (
-                        'Save Changes'
+                        'Save'
                       )}
                     </Button>
-                    <Button
-                      variant="outline"
-                      onClick={handleEditCancel}
-                      className="flex-1"
-                    >
+                    <Button variant="outline" className="flex-1" onClick={handleEditCancel}>
                       Cancel
                     </Button>
                   </div>
@@ -460,4 +412,4 @@ export default function HODApproveModifyPage() {
       </Card>
     </div>
   );
-} 
+}
