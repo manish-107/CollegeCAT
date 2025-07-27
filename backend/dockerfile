@@ -1,0 +1,45 @@
+# Use Python 3.13 slim image to match your requires-python setting
+FROM python:3.13-slim
+
+# Set environment variables for Python
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV UV_CACHE_DIR=/app/.uv-cache
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Install system dependencies for PostgreSQL (psycopg2-binary)
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
+
+# Copy dependency files first for better Docker layer caching
+COPY pyproject.toml uv.lock* ./
+
+# Install dependencies using uv
+RUN uv sync --frozen --no-cache
+
+# Copy the rest of your application code
+COPY . .
+
+# Create non-root user and UV cache directory
+RUN groupadd -r appuser && useradd -r -g appuser appuser && \
+    mkdir -p /app/.uv-cache && \
+    chown -R appuser:appuser /app
+
+USER appuser
+
+# Expose port 3000
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD python -c "import httpx; httpx.get('http://localhost:3000/health')" || exit 1
+
+# Run the application
+CMD ["uv", "run", "fastapi", "run", "app/main.py", "--host", "0.0.0.0", "--port", "3000"]

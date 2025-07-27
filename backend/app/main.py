@@ -1,4 +1,5 @@
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
+import redis
 from app.routes.auth_routes import authRoute
 from fastapi.middleware.cors import CORSMiddleware
 from scalar_fastapi import get_scalar_api_reference  # type: ignore
@@ -10,6 +11,11 @@ from app.routes.subject_priority_routes import subject_priority_router
 from app.routes.timetable_format_routes import router as timetable_format_router
 from app.routes.timetable_module_routes import router as timetable_module_router
 from app.routes.workflow_routes import workflow_router
+from app.db.postgres_client import get_db
+from app.db.radis_client import get_redis
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from app.config.config import settings
 
 
 app = FastAPI(title="Course Selection and Timetable System")
@@ -38,6 +44,54 @@ async def scalar_html():
         title=app.title,
     )
 
+# Health Check Endpoint
+@app.get("/health", tags=["Health"])
+async def health_check(
+    db: AsyncSession = Depends(get_db),
+    redis_client: redis.Redis = Depends(get_redis)
+):
+    """
+    Health check endpoint to verify database and Redis connections
+    """
+    health_status = {
+        "status": "healthy",
+        "service": "Course Selection and Timetable System",
+        "checks": {}
+    }
+    
+    try:
+        # Test PostgreSQL connection
+        await db.execute(select(1))
+        health_status["checks"]["database"] = {
+            "status": "healthy",
+            "message": "PostgreSQL connection successful"
+        }
+    except Exception as e:
+        health_status["status"] = "unhealthy"
+        health_status["checks"]["database"] = {
+            "status": "unhealthy",
+            "message": f"PostgreSQL connection failed: {str(e)}"
+        }
+    
+    try:
+        # Test Redis connection
+        await redis_client.ping()
+        health_status["checks"]["redis"] = {
+            "status": "healthy",
+            "message": "Redis connection successful"
+        }
+    except Exception as e:
+        health_status["status"] = "unhealthy"
+        health_status["checks"]["redis"] = {
+            "status": "unhealthy",
+            "message": f"Redis connection failed: {str(e)}"
+        }
+    
+    # Return appropriate HTTP status code
+    if health_status["status"] == "unhealthy":
+        raise HTTPException(status_code=503, detail=health_status)
+    
+    return health_status
 
 app.include_router(authRoute, prefix="/api/auth", tags=["Auth"])
 app.include_router(user_router, prefix="/api/users", tags=["Users"])

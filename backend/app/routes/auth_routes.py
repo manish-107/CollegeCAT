@@ -3,12 +3,12 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from datetime import datetime, timedelta, timezone
 import httpx
 import json
+import redis.asyncio as redis
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.config.config import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, REDIRECT_URI
+from app.config.config import settings
 from app.db.postgres_client import get_db
-from app.db.radis_client import redis_client
+from app.db.radis_client import get_redis
 from app.schemas.user_schema import signupData
-from app.config.config import FRONTEND_BASE_URL
 from app.services.auth_services import (
     get_userDetails_from_google,
     generate_session_id,
@@ -54,14 +54,16 @@ async def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
     return UserService(repository)
 
 
-@authRoute.get("/callback", response_class=RedirectResponse, operation_id="signin_redirect")
+@authRoute.get(
+    "/callback", response_class=RedirectResponse, operation_id="signin_redirect"
+)
 async def signin_redirect(
-    request: Request, service: UserService = Depends(get_user_service)
+    request: Request, service: UserService = Depends(get_user_service),redis_client: redis.Redis = Depends(get_redis)
 ):
     code = request.query_params.get("code")
 
     if not code:
-        return RedirectResponse(url=f"{FRONTEND_BASE_URL}/?error=code_missing")
+        return RedirectResponse(url=f"{settings.FRONTEND_BASE_URL}/?error=code_missing")
 
     # Make request to Google's token endpoint
     async with httpx.AsyncClient() as client:
@@ -70,9 +72,9 @@ async def signin_redirect(
                 "https://oauth2.googleapis.com/token",
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
                 data={
-                    "client_id": GOOGLE_CLIENT_ID,
-                    "client_secret": GOOGLE_CLIENT_SECRET,
-                    "redirect_uri": REDIRECT_URI,
+                    "client_id": settings.GOOGLE_CLIENT_ID,
+                    "client_secret": settings.GOOGLE_CLIENT_SECRET,
+                    "redirect_uri": settings.GOOGLE_REDIRECT_URI,
                     "code": code,
                     "grant_type": "authorization_code",
                 },
@@ -80,13 +82,15 @@ async def signin_redirect(
             response.raise_for_status()
         except httpx.RequestError:
             return RedirectResponse(
-                url=f"{FRONTEND_BASE_URL}/?error=token_exchange_failed"
+                url=f"{settings.FRONTEND_BASE_URL}/?error=token_exchange_failed"
             )
 
     token_data = response.json()
 
     if "error" in token_data:
-        return RedirectResponse(url=f"{FRONTEND_BASE_URL}/?error=invalid_token_data")
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_BASE_URL}/?error=invalid_token_data"
+        )
 
     access_token = token_data.get("access_token")
 
@@ -94,7 +98,7 @@ async def signin_redirect(
 
     if "error" in userData or "email" not in userData:
         return RedirectResponse(
-            url=f"{FRONTEND_BASE_URL}/?error=user_info_fetch_failed"
+            url=f"{settings.FRONTEND_BASE_URL}/?error=user_info_fetch_failed"
         )
 
     email = userData["email"]
@@ -132,11 +136,13 @@ async def signin_redirect(
 
         # Store session data in Redis
         res = await store_session_in_redis(
-            session_id=f"sessionid:{sessionid}", data=sessionData, ttl=expire_seconds
+            redis_client=redis_client,session_id=f"sessionid:{sessionid}", data=sessionData, ttl=expire_seconds
         )
 
         # Redirect to dashboard and set cookie
-        redirect_response: RedirectResponse = RedirectResponse(url=f"{FRONTEND_BASE_URL}/dashboard")
+        redirect_response: RedirectResponse = RedirectResponse(
+            url=f"{settings.FRONTEND_BASE_URL}/dashboard"
+        )
 
         redirect_response.set_cookie(
             key="session_id", value=sessionid, httponly=True, secure=True
@@ -166,16 +172,18 @@ async def signin_redirect(
 
         # Store session data in Redis
         res = await store_session_in_redis(
-            session_id=f"sessionid:{sessionid}", data=sessionData, ttl=expire_seconds
+             redis_client=redis_client,session_id=f"sessionid:{sessionid}", data=sessionData, ttl=expire_seconds
         )
 
         if not res:
             return RedirectResponse(
-                url=f"{FRONTEND_BASE_URL}/?error=session_store_failed"
+                url=f"{settings.FRONTEND_BASE_URL}/?error=session_store_failed"
             )
 
         # User does not exist, redirect to signup page
-        signup_redirect: RedirectResponse = RedirectResponse(url=f"{FRONTEND_BASE_URL}/signup")
+        signup_redirect: RedirectResponse = RedirectResponse(
+            url=f"{settings.FRONTEND_BASE_URL}/signup"
+        )
         signup_redirect.set_cookie(
             key="session_id", value=sessionid, httponly=True, secure=True
         )
@@ -200,6 +208,7 @@ async def complete_signup(
     signupData: signupData,
     request: Request,
     service: UserService = Depends(get_user_service),
+    redis_client: redis.Redis = Depends(get_redis)
 ):
     cookies = request.cookies  # no await here
     old_session_id = cookies.get("session_id")
@@ -209,7 +218,7 @@ async def complete_signup(
             status_code=400, content={"error": "Session ID missing in cookie"}
         )
 
-    sessionData = await get_session_data(old_session_id)
+    sessionData = await get_session_data(redis_client=redis_client,session_id=old_session_id)
 
     if not sessionData:
         return JSONResponse(
@@ -251,13 +260,13 @@ async def complete_signup(
     expire_seconds = "7d"  # Session expiration TTL
 
     # Store new session
-    await store_session_in_redis(
+    await store_session_in_redis( redis_client=redis_client,
         session_id=f"sessionid:{new_session_id}",
         data=new_session_data,
         ttl=expire_seconds,
     )
 
-    response = JSONResponse({"redirect_to": f"{FRONTEND_BASE_URL}/dashboard"})
+    response = JSONResponse({"redirect_to": f"{settings.FRONTEND_BASE_URL}/dashboard"})
 
     # Set cookie properly
     response.set_cookie(
@@ -279,26 +288,47 @@ async def complete_signup(
 
 
 @authRoute.get("/logout", operation_id="logout_user")
-async def logout_user(request: Request):
+async def logout_user(
+    request: Request,
+    redis_client: redis.Redis = Depends(get_redis)
+):
     cookies = request.cookies
     session_id = cookies.get("session_id")
 
     if not session_id:
         # No session_id found, redirect anyway
-        return RedirectResponse(url=f"{FRONTEND_BASE_URL}")
+        response = RedirectResponse(url=f"{settings.FRONTEND_BASE_URL}")
+        response.delete_cookie(key="session_id")  # Clear any stale cookie
+        return response
 
-    session_data = await redis_client.get(f"sessionid:{session_id}")
+    try:
+        # Get session data
+        session_data = await redis_client.get(f"sessionid:{session_id}")
 
-    if session_data:
-        session_data = json.loads(session_data)
-        user_id = session_data.get("user_id")
+        if session_data:
+            session_data = json.loads(session_data)
+            user_id = session_data.get("user_id")
 
-        # Delete session and user_session mapping
-        await redis_client.delete(f"sessionid:{session_id}")
-        await redis_client.delete(f"user_session:{user_id}")
+            # Delete session and user_session mapping
+            await redis_client.delete(f"sessionid:{session_id}")
+            
+            if user_id:
+                await redis_client.delete(f"user_session:{user_id}")
+        
+    except (redis.RedisError, json.JSONDecodeError) as e:
+        # Log the error but continue with logout
+        print(f"Error during logout cleanup: {e}")
+        # Still proceed with logout even if cleanup fails
 
     # Clear session cookie and redirect
-    response = RedirectResponse(url=f"{FRONTEND_BASE_URL}")
-    response.delete_cookie(key="session_id")
+    response = RedirectResponse(url=f"{settings.FRONTEND_BASE_URL}")
+    response.delete_cookie(
+        key="session_id",
+        path="/",  # Ensure it matches the cookie path
+        domain=None,  # Add domain if your cookie has one
+        secure=False,  # Set to True in production with HTTPS
+        httponly=True,  # Match your login cookie settings
+        samesite="lax"  # Match your login cookie settings
+    )
 
     return response

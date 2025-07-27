@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Path, Request, Depends
 from app.core.response_formatter import ResponseFormatter
-from app.middlewares.auth_middleware import auth_dependency, mock_auth_dependency
+from app.middlewares.auth_middleware import auth_dependency, mock_coordinator_auth_dependency
 from app.services.user_service import UserService
 from app.repositories.user_repository import UserRepository
 from app.db.postgres_client import get_db
@@ -30,7 +30,7 @@ async def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
 @user_router.get("/me", operation_id="get_current_user")
 async def get_current_user(request: Request):
     user = request.state.user
-
+    
     data = {
         "user_id": user["user_id"],
         "role": user["role"],

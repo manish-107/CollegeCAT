@@ -1,10 +1,11 @@
-from fastapi import Request, HTTPException, status
-from app.db.radis_client import redis_client
+from fastapi import Depends, Request, HTTPException, status
+import redis
+from app.db.radis_client import get_redis
 import json
 
-async def auth_dependency(request: Request):
+async def auth_dependency(request: Request, redis_client: redis.Redis = Depends(get_redis)):
     session_id = request.cookies.get("session_id")
-
+    print(f"Session ID from cookie: {session_id}")
     if not session_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

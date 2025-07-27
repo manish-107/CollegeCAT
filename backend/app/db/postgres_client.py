@@ -1,8 +1,8 @@
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from app.config.config import DATABASE_URL
+from app.config.config import settings
 
-async_url = str(DATABASE_URL).replace("postgresql://", "postgresql+asyncpg://", 1)
+async_url = str(settings.DATABASE_URL).replace("postgresql://", "postgresql+asyncpg://", 1)
 engine = create_async_engine(
     async_url, 
     echo=True, 
@@ -17,6 +17,7 @@ SessionLocal = async_sessionmaker(
 )
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    print("Async URL:", async_url)
     db = SessionLocal()
     try:
         yield db
