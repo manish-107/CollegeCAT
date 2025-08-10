@@ -2,8 +2,8 @@ from logging.config import fileConfig
 from sqlalchemy import pool
 from sqlalchemy import engine_from_config
 from alembic import context
-from app.config.config import DATABASE_URL
 from app.models.model import BaseClass
+from app.config.config import settings
 # Alembic Config object
 config = context.config
 
@@ -17,7 +17,7 @@ if config.config_file_name is not None:
 target_metadata = BaseClass.metadata
 
 # Convert SQLAlchemy URL object to string
-database_url_str = str(DATABASE_URL)
+database_url_str = str(settings.DATABASE_URL)
 sync_database_url = database_url_str.replace('postgresql+asyncpg://', 'postgresql://')
 config.set_main_option('sqlalchemy.url', sync_database_url)
 
